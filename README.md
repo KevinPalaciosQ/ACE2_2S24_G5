@@ -1,4 +1,5 @@
-# ACE2_2S24_G5
+# Laboratorio Arquitectura de Computadores y Ensambladores 2 Sección A 👨‍💻 
+---
 ### Integrantes 
 | # | Nombre                                | Carnet    |
 |---|---------------------------------------|-----------|

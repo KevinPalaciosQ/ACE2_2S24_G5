@@ -2,46 +2,109 @@
 #include <MFRC522.h>
 #include "User.h" 
 
-#define RST_PIN 9                         //Pin 9 para el reset del RC522
-#define SS_PIN 10                         //Pin 10 para el SS (SDA) del RC522
-
+// RC522
+#define RST_PIN 9                         
+#define SS_PIN 10                         
 MFRC522 mfrc522(SS_PIN, RST_PIN);         
+// Users
+User users[]                = { User("860FA022"), User("D46BE373") };  
+const int numUsers          = sizeof(users) / sizeof(users[0]);
+String pin                  =    "";
 
-User user1("860FA022");                   //Se crea un objeto de tipo usuario con su pin correspondiente
-User user2("D46BE373");                   //Se crea un objeto de tipo usuario con su pin correspondiente
-String pin = "";
+// PIR and IR sensors
+volatile bool pirCondition  =   false;  
+const int loginPin          =   8;  
+const int logoutPin         =   7; 
+const int PIRPin            =   2;  
+
+// Coin Hopper
+volatile bool extULogin     =   false;
+const int coinHopperPin     =   6;
+const int externalUserPin   =   3;
 
 void setup() {
+  pinMode(PIRPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(PIRPin), handleInterrupt, CHANGE);
+  pinMode(externalUserPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(externalUserPin), loginExternalUser, RISING);
+  pinMode(loginPin, INPUT);   
+  pinMode(logoutPin, INPUT); 
+  pinMode(coinHopperPin, INPUT); 
   Serial.begin(9600);                     //Iniciamos la comunicación serial
   SPI.begin();                            //Iniciamos el bus SPI
   mfrc522.PCD_Init();                     //Iniciamos el MFRC522
-  Serial.println("Lectura del UID");      //Imprimimos en consola el inicio de la lectura del UID
 }
 
 void loop() {
-  if (mfrc522.PICC_IsNewCardPresent()) {  
-    if (mfrc522.PICC_ReadCardSerial()) {  
-      Serial.print("Card UID:");    
-      pin = "";                           
+  if (pirCondition == true){
+    if (mfrc522.PICC_IsNewCardPresent()) {  
+      if (mfrc522.PICC_ReadCardSerial()) {  
+        pin = "";                           
 
-      for (byte i = 0; i < mfrc522.uid.size; i++) {
-        pin += String(mfrc522.uid.uidByte[i] < 0x10 ? "0" : "");
-        pin += String(mfrc522.uid.uidByte[i], HEX);
+        for (byte i = 0; i < mfrc522.uid.size; i++) {
+          pin += String(mfrc522.uid.uidByte[i] < 0x10 ? "0" : "");
+          pin += String(mfrc522.uid.uidByte[i], HEX);
+        }
+
+        pin.toUpperCase(); 
+
+        for (int i = 0; i < numUsers; i++) {  // Itera sobre el array de objetos User
+          if (pin.equals(users[i].getPin())) {
+            if (users[i].getState() == false && digitalRead(loginPin) == HIGH) {
+              users[i].setState(true);
+              Serial.println("User: "+pin);
+              Serial.println("\nUser logged in");
+
+              handleServoMotion();
+              break;
+
+            } else if (users[i].getState() == true && digitalRead(logoutPin) == HIGH) {
+              users[i].setState(false);
+              Serial.println("\nUser logged out");
+              
+              handleServoMotion();
+              break;
+
+            } else {
+              if (users[i].getState()) {
+                Serial.println("User: " + users[i].getPin() + " is logged in");
+              } else {
+                Serial.println("User: " + users[i].getPin() + " is logged out");
+              }
+            }
+          } 
+        }
+        
+
+        mfrc522.PICC_HaltA();
       }
-
-      pin.toUpperCase(); 
-
-      if (pin.equals(user1.getPin())) {
-        user1.setState(true);
-        Serial.println("\nUser 1");
-      } else if (pin.equals(user2.getPin())) {
-        user2.setState(true);
-        Serial.println("\nUser 2");
-      } else {
-        Serial.println("User desconocido");
-      }
-
-      mfrc522.PICC_HaltA();
+    } else if (extULogin == true && digitalRead(loginPin) == HIGH) {
+      Serial.println("External user logged in");
+      handleServoMotion();
+      extULogin = false;
+    } else {
+      if (digitalRead(coinHopperPin) == HIGH && digitalRead(logoutPin) == HIGH) {
+        Serial.println("Coin inserted, External user logout");
+        handleServoMotion();
+      } 
     }
   }
+}
+
+void handleInterrupt() {
+  pirCondition == true ? pirCondition = false : pirCondition = true;
+}
+
+void loginExternalUser() {
+  if (extULogin == false) {
+    extULogin = true;
+  } 
+}
+
+void handleServoMotion() {
+  while (pirCondition == true) {
+    Serial.println("Servo at 90 degrees");
+  }
+  delay(2000);
+  Serial.println("Servo at 0 degrees");
 }

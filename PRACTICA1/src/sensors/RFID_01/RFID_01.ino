@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include "User.h" 
+#include <Servo.h>
 
 // RC522
 #define RST_PIN 9                         
@@ -22,6 +23,10 @@ volatile bool extULogin     =   false;
 const int coinHopperPin     =   6;
 const int externalUserPin   =   3;
 
+// Servo
+Servo myServo;
+const int servoPin          =   5;
+
 void setup() {
   pinMode(PIRPin, INPUT);
   attachInterrupt(digitalPinToInterrupt(PIRPin), handleInterrupt, CHANGE);
@@ -30,6 +35,7 @@ void setup() {
   pinMode(loginPin, INPUT);   
   pinMode(logoutPin, INPUT); 
   pinMode(coinHopperPin, INPUT); 
+  myServo.attach(servoPin);
   Serial.begin(9600);                     //Iniciamos la comunicación serial
   SPI.begin();                            //Iniciamos el bus SPI
   mfrc522.PCD_Init();                     //Iniciamos el MFRC522
@@ -102,9 +108,17 @@ void loginExternalUser() {
 }
 
 void handleServoMotion() {
+  for (int angle = 0; angle <= 180; angle++) {
+    myServo.write(angle); 
+    delay(15); 
+  }
   while (pirCondition == true) {
     Serial.println("Servo at 90 degrees");
   }
   delay(2000);
   Serial.println("Servo at 0 degrees");
+  for (int angle = 180; angle >= 0; angle--) {
+    myServo.write(angle); 
+    delay(15); 
+  }
 }

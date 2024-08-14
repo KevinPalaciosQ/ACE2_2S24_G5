@@ -8,3 +8,9 @@
 | 3 | Kevin Estuardo Palacios Quiñonez      | 201902278 |
 | 4 | Allan Estuardo Sitan Bor              | 202010046 |
 | 5 | Edwin Aman Sam Pum                    | 202010307 |
+
+### Documentación Practica 1
+[Enlace](https://github.com/KevinPalaciosQ/ACE2_2S24_G5/blob/main/PRACTICA1/Documentacion/documentacion1.md)
+### Documentación Proyecto 1
+
+### Documentación Proyecto 2

@@ -8,16 +8,27 @@ Para aprovechar esta tecnología, se implementará la automatización de proceso
 
 ## Bocetos del prototipo
 
-![Propuesta 1](./images/propuesta1.png)
 >    Primera propuesta.
 
-![Propuesta 2](./images/propuesta2.png)
+![Propuesta 1](./images/propuesta1.png)
+
 >    Segunda propuesta.
 
-![Propuesta Final](./images/propuestafinal.png)
+![Propuesta 2](./images/propuesta2.png)
+
 >    Propuesta Final.
 
+![Propuesta Final](./images/propuestafinal.png)
+
 ## Imagenes de construcción del prototipo
+
+>    Construcción de divisiones del parqueo.
+
+![divisiones](./images/divisiones.jpg)
+
+>    Construcción de garita y espacio para sensor y motor para talanquera.
+
+![garita](./images/garita.jpg)
 
 ## Capas del framework de IoT
 

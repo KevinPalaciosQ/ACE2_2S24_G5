@@ -1,4 +1,4 @@
-# Laboratorio Arquitectura de Computadores y Ensambladores 2 Sección A 👨‍💻 
+# Laboratorio Arquitectura de Computadores y Ensambladores 2 Sección A 👨‍💻 Grupo #5
 ---
 ### Integrantes 
 | # | Nombre                                | Carnet    |

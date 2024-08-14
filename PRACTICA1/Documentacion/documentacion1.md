@@ -8,8 +8,12 @@ Para aprovechar esta tecnología, se implementará la automatización de proceso
 
 ## Bocetos del prototipo
 
-
-
+![Propuesta 1](./images/propuesta1.png)
+>    Primera propuesta.
+![Propuesta 2](./images/propuesta2.png)
+>    Segunda propuesta.
+![Propuesta Final](./images/propuestafinal.png)
+>    Propuesta Final.
 ## Imagenes de construcción del prototipo
 
 ## Capas del framework de IoT

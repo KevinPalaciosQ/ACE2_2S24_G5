@@ -65,6 +65,24 @@ Este trabajo, evidenciado en la presente documentación y en el repositorio adju
 - Envio de informacion: La informacion recolectada por los sensores es procesada por un arduino, al cual estan todos conectados por medio de un cable. Dichos datos seran enviados, por medio de conexion serial a
 Processing y luego son enviados a la pantalla LCD para que se puedan ver en tiempo real.
 
+
+### Analytics
+- Calculos aplicados en la LCD
+
+| Magnitud Fisica | Calculo  |
+| --- | --- |
+| Temperatura (°C) | Calculo a traves de sensor DHT11 |
+| Humedad Relativa (%)| Calculo a traves de sensor DHT11 |
+| Fotoresistencia| Calculo a traves del modulo |
+
+- Librerias Utilizadas
+
+| Libreria | Descripcion  |
+| --- | --- |
+| DHT | Es la que permite la comunicacion con los sensores DHT11 y DHT22, sensores de humedad/temperatura muy utiles para proyectos con Arduino |
+| Wire| Esta libreria le permite comunicarse al arduino por medio de modulo interno i2c, ya sea como maestro a otros dispositivos o como esclavo recibiendo peticiones y respondiendo datos. |
+| Adafruit_Sensor| Ayuda a muchos sistemas integrados pequeños para recopilar datos de los sensores, analizar los datos y tomar una accion adecuada o enviar los datos del sensor a otro sistema para su procesamiento. |
+
 ## Diagrama de Flujo completo
 
 ## Explicación de Interrupciones y Procedimientos

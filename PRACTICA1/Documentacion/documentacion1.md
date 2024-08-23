@@ -48,6 +48,15 @@ Este trabajo, evidenciado en la presente documentación y en el repositorio adju
 - Carton de varios tipos
 - Paletas de madera
 
+### Sensors
+- Sensor de temperatura y humedad DHT11
+- Sensor infrarrojo de obstaculos LM393
+- Modulo RFID RC522
+- Motor servo SG90 de 180 grados
+- Modulo de fotoresistencia 
+- Pantalla LCD 1602
+- Modulo I2C
+
 ## Diagrama de Flujo completo
 
 ## Explicación de Interrupciones y Procedimientos

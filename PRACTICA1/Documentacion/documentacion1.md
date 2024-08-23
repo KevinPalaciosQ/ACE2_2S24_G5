@@ -4,6 +4,7 @@
 
 <p style="text-align: justify;">
 En la presente documentación se describe el proceso realizado para el desarrollo del proyecto “Sistema de Ingreso y Salida de Vehículos con IoT”. Este proyecto se basa en el concepto de Internet de las Cosas (IoT), que se refiere a la interconexión de dispositivos y tecnologías capaces de transferir datos a través de una red. En este documento, se detalla desde el planteamiento inicial con los bocetos del prototipo, hasta su implementación física, cumpliendo con los requisitos especificados para asegurar un control efectivo y seguro del acceso vehicular.
+
 Este trabajo, evidenciado en la presente documentación y en el repositorio adjunto, incluye la utilización de diversos sensores y materiales para la construcción del sistema, que están integrados con un controlador adecuado para el procesamiento de datos. El sistema permite el monitoreo y validación del ingreso y salida de vehículos utilizando tecnologías como RFID, detección de roles, y pagos con monedas, asegurando que las respuestas de los componentes sean traducidas y gestionadas eficientemente para su visualización y control.
 </p>
 
@@ -32,6 +33,20 @@ Este trabajo, evidenciado en la presente documentación y en el repositorio adju
 ![garita](./images/garita.jpg)
 
 ## Capas del framework de IoT
+
+## Product Infrastructure
+### Listado de materiales fisicos:
+- Sensor de temperatura y humedad
+- Fotorresistencia
+- Sensores de movimiento
+- RFID
+- Tarjeta de acceso
+- Pantalla LCD
+- Servo motor
+- Arduino UNO
+- Cables
+- Carton de varios tipos
+- Paletas de madera
 
 ## Diagrama de Flujo completo
 

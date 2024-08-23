@@ -1,11 +1,10 @@
-# Practica 1 - Monitoreo de tráfico vehicular en parqueo de la Facultad de Ingeniería, Fase 1 (Talanquera Inteligente)
+# Talanquera Inteligente
 
 ## Introducción
 
 <p style="text-align: justify;">
-En la epoca actual, el Internet de las Cosas (IoT) ha ido creciendo como una de las tecnologías más transformadoras del siglo XXI. Este concepto se refiere a la interconexión de dispositivos y objetos cotidianos a internet, permitiendo que estos recojan, envíen y reciban datos. 
-
-Para aprovechar esta tecnología, se implementará la automatización de procesos en el parqueo, optimizando así el ingreso y salida de vehículos. Para cumplir con este propósito, se utilizarán sensores que recopilarán datos en tiempo real sobre la cantidad de vehículos, tiempo de permanencia, tipo de vehículo, condiciones climáticas, y si una persona pertenece o no a la universidad a través del uso de carnets RFID, entre otros aspectos. Para demostrar el funcionamiento de esta solución, se realizará la implementación de una maqueta.
+En la presente documentación se describe el proceso realizado para el desarrollo del proyecto “Sistema de Ingreso y Salida de Vehículos con IoT”. Este proyecto se basa en el concepto de Internet de las Cosas (IoT), que se refiere a la interconexión de dispositivos y tecnologías capaces de transferir datos a través de una red. En este documento, se detalla desde el planteamiento inicial con los bocetos del prototipo, hasta su implementación física, cumpliendo con los requisitos especificados para asegurar un control efectivo y seguro del acceso vehicular.
+Este trabajo, evidenciado en la presente documentación y en el repositorio adjunto, incluye la utilización de diversos sensores y materiales para la construcción del sistema, que están integrados con un controlador adecuado para el procesamiento de datos. El sistema permite el monitoreo y validación del ingreso y salida de vehículos utilizando tecnologías como RFID, detección de roles, y pagos con monedas, asegurando que las respuestas de los componentes sean traducidas y gestionadas eficientemente para su visualización y control.
 </p>
 
 ## Bocetos del prototipo

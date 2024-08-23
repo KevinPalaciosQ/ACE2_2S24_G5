@@ -85,6 +85,8 @@ Processing y luego son enviados a la pantalla LCD para que se puedan ver en tiem
 
 ## Diagrama de Flujo completo
 
+![Propuesta 2](./images/diagrama.png)
+
 ## Explicación de Interrupciones y Procedimientos
 
 ## Link del repositorio de github

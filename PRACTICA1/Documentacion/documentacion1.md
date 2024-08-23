@@ -57,6 +57,14 @@ Este trabajo, evidenciado en la presente documentación y en el repositorio adju
 - Pantalla LCD 1602
 - Modulo I2C
 
+
+### Connectivity
+
+- Ubicacion de la maqueta: La maqueta creada debe de estar en un area abierta para tener correctas mediciones en los sensores de monitorizaje del clima, por lo que el lugar en el que estara ubicada es un patio, en una superficie plana, para que no se vean afectados los resultados de algunas mediciones.
+
+- Envio de informacion: La informacion recolectada por los sensores es procesada por un arduino, al cual estan todos conectados por medio de un cable. Dichos datos seran enviados, por medio de conexion serial a
+Processing y luego son enviados a la pantalla LCD para que se puedan ver en tiempo real.
+
 ## Diagrama de Flujo completo
 
 ## Explicación de Interrupciones y Procedimientos

@@ -5,6 +5,7 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include "DHT.h"
+#include <EEPROM.h>
 
 // RC522 
 #define RST_PIN 9                         
@@ -17,7 +18,10 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 DHT dht(DHTPIN, DHTTYPE);
 
 // Users
+String student = "860FA022";
+String admin = "D46BE373";
 User users[]                = { User("860FA022"), User("D46BE373") };  
+//User users[]                = { User("Student"), User("Admin") };  
 const int numUsers          = sizeof(users) / sizeof(users[0]);
 String pin                  =    "";
 
@@ -26,6 +30,9 @@ volatile bool pirCondition  =   false;
 const int loginPin          =   8;  
 const int logoutPin         =   7; 
 const int PIRPin            =   2;  
+
+volatile unsigned long lastInterruptTime = 0; // Tiempo de la última interrupción
+const unsigned long debounceDelay = 50; // Tiempo de debounce en milisegundos
 
 // Coin Hopper
 volatile bool extULogout     =   false;
@@ -79,7 +86,24 @@ void loop() {
 }
 
 void handleInterrupt() {
-  pirCondition == true ? pirCondition = false : pirCondition = true;
+  unsigned long currentTime = millis(); // Obtener el tiempo actual en milisegundos
+  
+  // Si el tiempo transcurrido desde la última interrupción es menor que el tiempo de debounce, no hacer nada
+  if (currentTime - lastInterruptTime < debounceDelay) {
+    return;
+  }
+
+  // Actualizar el tiempo de la última interrupción
+  lastInterruptTime = currentTime;
+
+  // Cambiar el estado de pirCondition
+  if (pirCondition == true) {
+    pirCondition = false;
+    Serial.println("Cambiando de 1 a 0");
+  } else {
+    pirCondition = true;
+    Serial.println("Cambiando de 0 a 1");
+  }
 }
 
 void logoutExternalUser() {
@@ -105,6 +129,24 @@ void handleServoMotion() {
 }
 
 void login(){
+  byte studentState;
+  byte adminState;
+  EEPROM.get(0, studentState);
+  EEPROM.get(1, adminState);
+  users[0].setState(studentState != 0);
+  users[1].setState(adminState != 0);
+
+  if (users[0].getState()){
+    Serial.println("Student: Logged in");
+  } else {
+    Serial.println("Studnet: Logged out");
+  } 
+  if (users[1].getState()){
+    Serial.println("Admin: Logged in");
+  } else {
+    Serial.println("Admin: Logged out");
+  }
+
   if (pirCondition == true || digitalRead(logoutPin) == LOW){
     if (mfrc522.PICC_IsNewCardPresent()) {  
       if (mfrc522.PICC_ReadCardSerial()) {  
@@ -121,6 +163,7 @@ void login(){
           if (pin.equals(users[i].getPin())) { // Compara ID estudiante/profesor con el ID de la tarjeta y ve que pertenezca a la lista de usuarios
             if (users[i].getState() == false && digitalRead(loginPin) == LOW) { // Verifica que detecte IR ENTRADA y que el usuario haya salido antes, ******si se cumple hace LOGIN******
               users[i].setState(true);
+              EEPROM.write(i, 1);
               String userName = "User: "+pin;
               lcd.clear();
               Serial.println(userName + "\nUser logged in");
@@ -136,6 +179,7 @@ void login(){
 
             } else if (users[i].getState() == true && digitalRead(logoutPin) == LOW) { //Verifica que estudiante/profesor ya este dentro y si detecta algo en la salida, **si se cumple hace LOGOUT**
               users[i].setState(false);
+              EEPROM.write(i, 0);
               lcd.clear();
               lcd.setCursor(0,0);
               lcd.print("User logged out");

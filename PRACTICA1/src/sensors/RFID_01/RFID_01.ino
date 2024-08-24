@@ -68,9 +68,8 @@ void setup() {
 
 void loop() {
   delay(2000);
-  float h = dht.readHumidity(); //Leemos la Humedad
-  float t = dht.readTemperature(); //Leemos la temperatura en grados Celsius
-  float f = dht.readTemperature(true); //Leemos la temperatura en grados Fahrenheit
+  float h = dht.readHumidity(); 
+  float t = dht.readTemperature();
 
   String humidityText = "Humidity: " + String(h) + "%";
   String temperatureText = "Temp: " + String(t) + " C";
@@ -86,17 +85,14 @@ void loop() {
 }
 
 void handleInterrupt() {
-  unsigned long currentTime = millis(); // Obtener el tiempo actual en milisegundos
+  unsigned long currentTime = millis(); 
   
-  // Si el tiempo transcurrido desde la última interrupción es menor que el tiempo de debounce, no hacer nada
   if (currentTime - lastInterruptTime < debounceDelay) {
     return;
   }
 
-  // Actualizar el tiempo de la última interrupción
   lastInterruptTime = currentTime;
 
-  // Cambiar el estado de pirCondition
   if (pirCondition == true) {
     pirCondition = false;
     Serial.println("Cambiando de 1 a 0");
@@ -168,8 +164,13 @@ void login(){
               lcd.clear();
               Serial.println(userName + "\nUser logged in");
 
+            if (pin.equals("860FA022")){
               lcd.setCursor(0, 0); 
-              lcd.print(userName);
+              lcd.print("Student :3");
+            } else {
+              lcd.setCursor(0, 0); 
+              lcd.print("Admin :o");
+            }
               
               lcd.setCursor(0, 1); // Coloca el cursor en la segunda fila, primera columna
               lcd.print("Logged in");

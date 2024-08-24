@@ -98,6 +98,7 @@ attachInterrupt(digitalPinToInterrupt(PIRPin), handleInterrupt, CHANGE);
 void handleInterrupt() {
   pirCondition == true ? pirCondition = false : pirCondition = true;
 }
+```
 
 ## Link del repositorio de github
 [Enlace](https://github.com/KevinPalaciosQ/ACE2_2S24_G5/tree/main/PRACTICA1)

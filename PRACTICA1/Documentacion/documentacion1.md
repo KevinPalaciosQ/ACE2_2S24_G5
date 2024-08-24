@@ -89,5 +89,15 @@ Processing y luego son enviados a la pantalla LCD para que se puedan ver en tiem
 
 ## Explicación de Interrupciones y Procedimientos
 
+En esta interrupcion se configura un sensor PIR para monitorear el movimiento a traves de un pin especifico en el arduino, cada vez que el sensor detecta un cambio en el movimiento (cuando el vehiculo esta enfrente), se ejecuta una interrupcion que alterna el estado de la variable pirCondition.
+
+```cpp
+pinMode(PIRPin, INPUT);
+attachInterrupt(digitalPinToInterrupt(PIRPin), handleInterrupt, CHANGE);
+
+void handleInterrupt() {
+  pirCondition == true ? pirCondition = false : pirCondition = true;
+}
+
 ## Link del repositorio de github
 [Enlace](https://github.com/KevinPalaciosQ/ACE2_2S24_G5/tree/main/PRACTICA1)

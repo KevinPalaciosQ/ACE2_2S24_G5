@@ -70,7 +70,7 @@ body {
   border-radius: 5px;
 }
 .sidebar {
-  background-color: #1e1e1e; /* Color de fondo oscuro */
+  background-color: rgb(19, 60, 107); /* Color de fondo oscuro */
   color: #ffffff; /* Color del texto en blanco */
   height: 100vh;
   padding: 20px;
@@ -85,7 +85,8 @@ body {
 }
 
 .menu-item:hover {
-  background-color: #333333; /* Efecto hover en un tono gris oscuro */
+  background-color: rgb(15, 48, 86)
+  /* Efecto hover en un tono gris oscuro */
 }
 
 .menu-item svg {

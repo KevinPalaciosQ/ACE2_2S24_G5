@@ -1,0 +1,49 @@
+.student-form-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  
+  .photo-container {
+    margin-right: 20px;
+  }
+  
+  .student-photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover; /* Hace que la imagen se ajuste dentro del área circular */
+    border: 2px solid #333; /* Borde opcional para la imagen */
+  }
+  
+  .form-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-container label {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+  }
+  
+  .form-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .prev-button, .next-button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  .prev-button:hover, .next-button:hover {
+    background-color: #45a049;
+  }
+  

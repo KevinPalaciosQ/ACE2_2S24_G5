@@ -69,3 +69,25 @@ body {
   border: 1px solid #ccc;
   border-radius: 5px;
 }
+.sidebar {
+  background-color: #1e1e1e; /* Color de fondo oscuro */
+  color: #ffffff; /* Color del texto en blanco */
+  height: 100vh;
+  padding: 20px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  cursor: pointer;
+  color: #ffffff; /* Color del texto */
+}
+
+.menu-item:hover {
+  background-color: #333333; /* Efecto hover en un tono gris oscuro */
+}
+
+.menu-item svg {
+  margin-right: 10px; /* Espaciado para los iconos */
+}

@@ -20,6 +20,7 @@ CREATE TABLE Usuario (
     saldo FLOAT NOT NULL,
     RFID VARCHAR(100) NOT NULL UNIQUE,
     tipoUsuario ENUM('estudiante', 'administrativo') NOT NULL,
+    estado ENUM('dentro', 'fuera') NOT NULL,
     id_administrador INT,
     FOREIGN KEY (id_administrador) REFERENCES Administrador(id) ON DELETE CASCADE
 );

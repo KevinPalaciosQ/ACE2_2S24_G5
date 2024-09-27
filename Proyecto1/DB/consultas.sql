@@ -1,3 +1,4 @@
+Use arqbased;
 SELECT * FROM administrador;
 SELECT * FROM usuario;
 SELECT * FROM vehiculo;
@@ -11,3 +12,4 @@ JOIN Usuario u ON h.UID = u.UID
 JOIN Vehiculo v ON h.id_vehiculo = v.id
 WHERE u.UID = 1;
 
+SELECT humedad FROM clima;

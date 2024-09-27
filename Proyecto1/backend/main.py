@@ -63,7 +63,62 @@ def login():
             "status": 500,
             "msg": f"Error en la base de datos: {err}"
         }), 500
+# -----------------------------------------------------------------------------------LISTA USUARIOS PARA PANEL DE USUARIOS
 
+@app.route('/administrador/listarUsuarios', methods=['GET'])
+def listar_usuarios():
+    try:
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consulta SQL para obtener los datos más recientes de historial por usuario
+        query = """
+            SELECT u.estado, u.saldo, h.fechaEntrada, h.horaEntrada, h.horaSalida, u.UID, u.tipoUsuario
+            FROM Usuario u
+            LEFT JOIN (
+                SELECT h1.*
+                FROM Historial_Ingreso_Egreso h1
+                JOIN (
+                    SELECT UID, MAX(CONCAT(fechaEntrada, ' ', horaEntrada)) AS max_fecha
+                    FROM Historial_Ingreso_Egreso
+                    GROUP BY UID
+                ) h2 ON h1.UID = h2.UID AND CONCAT(h1.fechaEntrada, ' ', h1.horaEntrada) = h2.max_fecha
+            ) h ON u.UID = h.UID;
+        """
+        
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        # Procesar los resultados
+        usuarios = []
+        for row in rows:
+            usuarios.append({
+                "estado": row[0],           # estado desde Usuario
+                "saldo": row[1],            # saldo desde Usuario
+                "fecha": str(row[2]),       # fechaEntrada desde Historial_Ingreso_Egreso
+                "horaIngreso": str(row[3]), # horaEntrada desde Historial_Ingreso_Egreso
+                "horaEgreso": str(row[4]),  # horaSalida desde Historial_Ingreso_Egreso
+                "uid": row[5],              # UID desde Usuario
+                "tipoUsuario": row[6]       # tipoUsuario desde Usuario
+            })
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver respuesta exitosa
+        return jsonify({
+            "status": 200,
+            "msg": "Usuarios listados correctamente",
+            "usuarios": usuarios
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al listar usuarios: {err}"
+        }), 400
 # -----------------------------------------------------------------------------------Clima
 @app.route('/administrador/graficaClima', methods=['GET'])
 def get_clima():
@@ -85,37 +140,6 @@ def get_clima():
             "tipoUsuario": row[5]
         })
     return jsonify(usuarios)
-
-
-
-
-
-
-
-
-
-
-@app.route('/usuarios', methods=['GET'])
-def get_usuarios():
-    db_connection = get_db_connection()
-    cursor = db_connection.cursor()
-    cursor.execute("SELECT * FROM Usuario")
-    rows = cursor.fetchall()
-    cursor.close()
-    db_connection.close()
-    
-    usuarios = []
-    for row in rows:
-        usuarios.append({
-            "UID": row[0],
-            "nombre": row[1],
-            "apellido": row[2],
-            "saldo": row[3],
-            "RFID": row[4],
-            "tipoUsuario": row[5]
-        })
-    return jsonify(usuarios)
-
 
 
 '''

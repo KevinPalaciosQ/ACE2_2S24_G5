@@ -119,6 +119,193 @@ def listar_usuarios():
             "status": 400,
             "msg": f"Error al listar usuarios: {err}"
         }), 400
+    
+# -----------------------------------------------------------------------------------BUSCAR USUARIO POR UID Y RETORNAR INFORMACION DE USUARIO Y HISTORIAL DE INGRESOS Y EGRESOS
+
+@app.route('/administrador/obtenerusuario', methods=['POST'])
+def obtener_usuario():
+    try:
+        # Obtener datos de la solicitud POST
+        data = request.get_json()
+        uid = data.get('uid')
+
+        if not uid:
+            return jsonify({
+                "status": 400,
+                "msg": "UID no proporcionado."
+            }), 400
+
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consultar los datos del usuario basado en el UID
+        query_usuario = """
+            SELECT nombre, apellido, UID, RFID, saldo
+            FROM Usuario
+            WHERE UID = %s
+        """
+        cursor.execute(query_usuario, (uid,))
+        usuario = cursor.fetchone()
+
+        if not usuario:
+            return jsonify({
+                "status": 400,
+                "msg": "Usuario no encontrado."
+            }), 400
+
+        # Consultar el historial de ingreso/egreso del usuario junto con los detalles del vehículo
+        query_historial = """
+            SELECT h.id, h.fechaEntrada, h.horaEntrada, h.horaSalida, h.costo, v.tipoVehiculo, v.placa
+            FROM Historial_Ingreso_Egreso h
+            LEFT JOIN Vehiculo v ON h.UID = v.UID
+            WHERE h.UID = %s
+            ORDER BY h.fechaEntrada DESC, h.horaEntrada DESC
+        """
+        cursor.execute(query_historial, (uid,))
+        historial = cursor.fetchall()
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Procesar los datos del historial
+        historial_list = []
+        for record in historial:
+            historial_list.append({
+                "id": record[0],              # id desde Historial_Ingreso_Egreso
+                "fecha": str(record[1]),       # fechaEntrada desde Historial_Ingreso_Egreso
+                "horaEntrada": str(record[2]), # horaEntrada desde Historial_Ingreso_Egreso
+                "horaSalida": str(record[3]),  # horaSalida desde Historial_Ingreso_Egreso
+                "costo": record[4],            # costo desde Historial_Ingreso_Egreso
+                "tipoVehiculo": record[5],     # tipoVehiculo desde Vehículo
+                "placa": record[6]             # placa desde Vehículo
+            })
+
+        # Devolver la respuesta con la información del usuario y su historial
+        return jsonify({
+            "status": 200,
+            "msg": "Usuario encontrado exitosamente.",
+            "nombre": usuario[0],  # nombre desde Usuario
+            "apellido": usuario[1], # apellido desde Usuario
+            "uid": usuario[2],      # UID desde Usuario
+            "rfid": usuario[3],     # RFID desde Usuario
+            "saldo": usuario[4],    # saldo desde Usuario
+            "historial": historial_list
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener usuario: {err}"
+        }), 400
+    
+# -----------------------------------------------------------------------------------EDITAR SALDO DEL USUARIO
+
+# Ruta para sumar saldo
+@app.route('/administrador/sumarSaldo', methods=['POST'])
+def sumar_saldo():
+    try:
+        data = request.get_json()
+        uid = data.get('uid')
+
+        if not uid:
+            return jsonify({
+                "status": 400,
+                "msg": "UID no proporcionado."
+            }), 400
+
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consultar el saldo actual del usuario
+        cursor.execute("SELECT saldo FROM Usuario WHERE UID = %s", (uid,))
+        usuario = cursor.fetchone()
+
+        if not usuario:
+            return jsonify({
+                "status": 400,
+                "msg": "Usuario no encontrado."
+            }), 400
+
+        # Sumar 1.00 al saldo
+        nuevo_saldo = usuario[0] + 1.00
+        cursor.execute("UPDATE Usuario SET saldo = %s WHERE UID = %s", (nuevo_saldo, uid))
+        db_connection.commit()
+
+        # Cerrar conexión
+        cursor.close()
+        db_connection.close()
+
+        return jsonify({
+            "status": 200,
+            "msg": "Saldo incrementado correctamente.",
+            "saldo": nuevo_saldo
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al actualizar el saldo: {err}"
+        }), 400
+
+# Ruta para restar saldo
+@app.route('/administrador/restarSaldo', methods=['POST'])
+def restar_saldo():
+    try:
+        data = request.get_json()
+        uid = data.get('uid')
+
+        if not uid:
+            return jsonify({
+                "status": 400,
+                "msg": "UID no proporcionado."
+            }), 400
+
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consultar el saldo actual del usuario
+        cursor.execute("SELECT saldo FROM Usuario WHERE UID = %s", (uid,))
+        usuario = cursor.fetchone()
+
+        if not usuario:
+            return jsonify({
+                "status": 400,
+                "msg": "Usuario no encontrado."
+            }), 400
+
+        # Verificar que el saldo no sea menor a 0 al restar
+        saldo_actual = usuario[0]
+        if saldo_actual <= 0:
+            return jsonify({
+                "status": 400,
+                "msg": "Saldo insuficiente. No se puede restar más."
+            }), 400
+
+        # Restar 1.00 del saldo
+        nuevo_saldo = saldo_actual - 1.00
+        cursor.execute("UPDATE Usuario SET saldo = %s WHERE UID = %s", (nuevo_saldo, uid))
+        db_connection.commit()
+
+        # Cerrar conexión
+        cursor.close()
+        db_connection.close()
+
+        return jsonify({
+            "status": 200,
+            "msg": "Saldo restado correctamente.",
+            "saldo": nuevo_saldo
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al actualizar el saldo: {err}"
+        }), 400
+
+
+
 # -----------------------------------------------------------------------------------Clima
 @app.route('/administrador/graficaClima', methods=['GET'])
 def get_clima():

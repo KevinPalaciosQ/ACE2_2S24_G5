@@ -95,10 +95,10 @@ void handleInterrupt() {
 
   if (pirCondition == true) {
     pirCondition = false;
-    Serial.println("Cambiando de 1 a 0");
+    //Serial.println("Cambiando de 1 a 0");
   } else {
     pirCondition = true;
-    Serial.println("Cambiando de 0 a 1");
+    //Serial.println("Cambiando de 0 a 1");
   }
 }
 
@@ -114,10 +114,10 @@ void handleServoMotion() {
     delay(15); 
   }
   while (pirCondition == true) {
-    Serial.println("Servo at 90 degrees");
+    //Serial.println("Servo at 90 degrees");
   }
   delay(2200);
-  Serial.println("Servo at 0 degrees");
+  //Serial.println("Servo at 0 degrees");
   for (int angle = 180; angle >= 0; angle--) {
     myServo.write(angle); 
     delay(15); 
@@ -132,16 +132,16 @@ void login(){
   users[0].setState(studentState != 0);
   users[1].setState(adminState != 0);
 
-  if (users[0].getState()){
-    Serial.println("Student: Logged in");
-  } else {
-    Serial.println("Studnet: Logged out");
-  } 
-  if (users[1].getState()){
-    Serial.println("Admin: Logged in");
-  } else {
-    Serial.println("Admin: Logged out");
-  }
+  // if (users[0].getState()){
+  //   Serial.println("Student: Logged in");
+  // } else {
+  //   Serial.println("Student: Logged out");
+  // } 
+  // if (users[1].getState()){
+  //   Serial.println("Admin: Logged in");
+  // } else {
+  //   Serial.println("Admin: Logged out");
+  // }
 
   if (pirCondition == true || digitalRead(logoutPin) == LOW){
     if (mfrc522.PICC_IsNewCardPresent()) {  
@@ -162,14 +162,22 @@ void login(){
               EEPROM.write(i, 1);
               String userName = "User: "+pin;
               lcd.clear();
-              Serial.println(userName + "\nUser logged in");
+              //Serial.println(userName + "\nUser logged in");
 
             if (pin.equals("860FA022")){
               lcd.setCursor(0, 0); 
               lcd.print("Student :3");
+              Serial.print("860FA022, ");
+              Serial.print(humidityText);
+              Serial.print(", ");
+              Serial.println(temperatureText);
             } else {
               lcd.setCursor(0, 0); 
               lcd.print("Admin :o");
+              Serial.print("D46BE373, ");
+              Serial.print(humidityText);
+              Serial.print(", ");
+              Serial.println(temperatureText);
             }
               
               lcd.setCursor(0, 1); // Coloca el cursor en la segunda fila, primera columna
@@ -184,7 +192,7 @@ void login(){
               lcd.clear();
               lcd.setCursor(0,0);
               lcd.print("User logged out");
-              Serial.println("\nUser logged out");
+              //Serial.println("\nUser logged out");
 
               
               handleServoMotion();
@@ -192,14 +200,14 @@ void login(){
 
             } else { // IMPRIME QUE EL USUARIO YA ESTA ADENTRO Y NO HA SALIDO
               if (users[i].getState()) {                                                  //
-                Serial.println("User: " + users[i].getPin() + " is logged in");
+                //Serial.println("User: " + users[i].getPin() + " is logged in");
                 lcd.clear();
                 lcd.setCursor(0, 0);
                 lcd.print("User already logged in");
                 lcd.setCursor(0, 1);
                 lcd.print("logged in");
               } else { // IMPRIME QUE EL USUARIO YA ESTE AFUERA Y NO HA ENTRADO
-                Serial.println("User: " + users[i].getPin() + " is logged out");
+                //Serial.println("User: " + users[i].getPin() + " is logged out");
                 lcd.clear();
                 lcd.setCursor(0,0);
                 lcd.print("User already");
@@ -214,7 +222,7 @@ void login(){
         mfrc522.PICC_HaltA();
       }
     } else if (digitalRead(externalUserPin) == HIGH && digitalRead(loginPin) == LOW) { //DETECTA QUE PRESIONARON EL PULSADOR Y QUE DETECTO IR ENTRADA, ***HACE LOGIN COMO EXTERNO***
-      Serial.println("External user logged in");
+      //Serial.println("External user logged in");
       lcd.clear();
       lcd.setCursor(0,0);
       lcd.print("External user");
@@ -223,7 +231,7 @@ void login(){
       handleServoMotion();
     } else {
       if (extULogout == true && digitalRead(logoutPin) == LOW) { // Valida que se haya depositado la moneda y que en la salida haya alguien, *** HACE LOGOUT COMO EXTERNO***
-        Serial.println("Coin inserted, External user logout");
+        //Serial.println("Coin inserted, External user logout");
 
         lcd.setCursor(0,0);
         lcd.print("Coin inserted:");

@@ -506,6 +506,19 @@ def get_espacios_disponibles():
         }), 400
 
 
+# -------------------------------------------------------------------   OBTENER EL PORCENTAJE DE OCUPACIÓN DENTRO DEL PARQUEO
+
+
+
+
+
+
+
+
+
+
+
+
 '''
 ACÁ VA EL CÓDIGO PARA EL PANEL DE CLIMA ******************************************************************************
 '''

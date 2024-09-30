@@ -14,7 +14,9 @@ def get_db_connection():
         database='arqbased'  # Cambia por tu base de datos
     )
 
-
+'''
+ACÁ VA EL CÓDIGO PARA EL PANEL DE USUARIOS, INCLUYENDO EL LOGIN ******************************************************************************
+'''
 # -----------------------------------------------------------------------------------LOGIN
 @app.route('/login', methods=['POST'])
 def login():
@@ -103,6 +105,35 @@ def listar_usuarios():
                 "tipoUsuario": row[6]       # tipoUsuario desde Usuario
             })
 
+        # Consulta SQL para obtener los datos más recientes de historial por externo
+        query_externos = """
+            SELECT e.estado, h.fechaEntrada, h.horaEntrada, h.horaSalida, e.id
+            FROM Externo e
+            LEFT JOIN (
+                SELECT h1.*
+                FROM Historial_Ingreso_Egreso h1
+                JOIN (
+                    SELECT id_externo, MAX(CONCAT(fechaEntrada, ' ', horaEntrada)) AS max_fecha
+                    FROM Historial_Ingreso_Egreso
+                    GROUP BY id_externo
+                ) h2 ON h1.id_externo = h2.id_externo AND CONCAT(h1.fechaEntrada, ' ', h1.horaEntrada) = h2.max_fecha
+            ) h ON e.id = h.id_externo;
+        """
+
+        cursor.execute(query_externos)
+        rows_externos = cursor.fetchall()
+
+        # Procesar los resultados de los externos
+        externos = []
+        for row in rows_externos:
+            externos.append({
+                "estado": row[0],           # estado desde Externo
+                "fecha": str(row[1]),       # fechaEntrada desde Historial_Ingreso_Egreso
+                "horaIngreso": str(row[2]), # horaEntrada desde Historial_Ingreso_Egreso
+                "horaEgreso": str(row[3]),  # horaSalida desde Historial_Ingreso_Egreso
+                "id": row[4]                # id desde Externo
+            })
+
         # Cerrar cursor y conexión
         cursor.close()
         db_connection.close()
@@ -111,7 +142,8 @@ def listar_usuarios():
         return jsonify({
             "status": 200,
             "msg": "Usuarios listados correctamente",
-            "usuarios": usuarios
+            "usuarios": usuarios,
+            "externos": externos
         }), 200
 
     except mysql.connector.Error as err:
@@ -200,6 +232,82 @@ def obtener_usuario():
             "msg": f"Error al obtener usuario: {err}"
         }), 400
     
+@app.route('/administrador/obtenerexterno', methods=['POST'])
+def obtener_externo():
+    try:
+        # Obtener datos de la solicitud POST
+        data = request.get_json()
+        id_externo = data.get('id_externo')
+
+        if not id_externo:
+            return jsonify({
+                "status": 400,
+                "msg": "ID de externo no proporcionado."
+            }), 400
+
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consultar los datos del usuario externo basado en el ID
+        query_externo = """
+            SELECT nombre, apellido, id
+            FROM Externo
+            WHERE id = %s
+        """
+        cursor.execute(query_externo, (id_externo,))
+        externo = cursor.fetchone()
+
+        if not externo:
+            return jsonify({
+                "status": 400,
+                "msg": "Externo no encontrado."
+            }), 400
+
+        # Consultar el historial de ingreso/egreso del externo junto con los detalles del vehículo
+        query_historial = """
+            SELECT h.id, h.fechaEntrada, h.horaEntrada, h.horaSalida, h.costo, v.tipoVehiculo, v.placa
+            FROM Historial_Ingreso_Egreso h
+            LEFT JOIN Vehiculo v ON h.id_externo = v.id_externo
+            WHERE h.id_externo = %s
+            ORDER BY h.fechaEntrada DESC, h.horaEntrada DESC
+        """
+        cursor.execute(query_historial, (id_externo,))
+        historial = cursor.fetchall()
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Procesar los datos del historial
+        historial_list = []
+        for record in historial:
+            historial_list.append({
+                "id": record[0],              # id desde Historial_Ingreso_Egreso
+                "fecha": str(record[1]),       # fechaEntrada desde Historial_Ingreso_Egreso
+                "horaEntrada": str(record[2]), # horaEntrada desde Historial_Ingreso_Egreso
+                "horaSalida": str(record[3]),  # horaSalida desde Historial_Ingreso_Egreso
+                "costo": record[4],            # costo desde Historial_Ingreso_Egreso
+                "tipoVehiculo": record[5],     # tipoVehiculo desde Vehículo
+                "placa": record[6]             # placa desde Vehículo
+            })
+
+        # Devolver la respuesta con la información del externo y su historial
+        return jsonify({
+            "status": 200,
+            "msg": "Externo encontrado exitosamente.",
+            "nombre": externo[0],  # nombre desde Externo
+            "apellido": externo[1], # apellido desde Externo
+            "id": externo[2],      # id desde Externo
+            "historial": historial_list
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener externo: {err}"
+        }), 400
+
 # -----------------------------------------------------------------------------------EDITAR SALDO DEL USUARIO
 
 # Ruta para sumar saldo
@@ -304,7 +412,103 @@ def restar_saldo():
             "msg": f"Error al actualizar el saldo: {err}"
         }), 400
 
+'''
+ACÁ VA EL CÓDIGO PARA EL PANEL DE MONITOREO ******************************************************************************
+'''
+# -----------------------------------------------------------------------------------OBTENER LA CANTIDAD DE VEHICULOS DENTRO DEL PARQUEO
 
+@app.route('/administrador/getCantidadVehiculos', methods=['GET'])
+def get_cantidad_vehiculos():
+    try:
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consulta SQL para obtener la capacidad total y los espacios disponibles del estacionamiento
+        query = """
+            SELECT capacidad, espaciosDisponibles
+            FROM Estacionamiento
+            LIMIT 1;
+        """
+        cursor.execute(query)
+        estacionamiento = cursor.fetchone()
+
+        if not estacionamiento:
+            return jsonify({
+                "status": 401,
+                "msg": "No se encontró información sobre el estacionamiento."
+            }), 401
+
+        # Calcular la cantidad de vehículos dentro del parqueo
+        capacidad_total = estacionamiento[0]            # Capacidad total del estacionamiento
+        espacios_disponibles = estacionamiento[1]       # Espacios disponibles en el estacionamiento
+        cantidad_vehiculos = capacidad_total - espacios_disponibles  # Vehículos dentro del parqueo
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver la respuesta con la cantidad de vehículos
+        return jsonify({
+            "status": 200,
+            "msg": "Cantidad de vehículos obtenida correctamente.",
+            "cantidad": cantidad_vehiculos
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener la cantidad de vehículos: {err}"
+        }), 400
+
+# -----------------------------------------------------------------------------------OBTENER LOS ESPACIOS DISPONIBLES DENTRO DEL PARQUEO
+
+@app.route('/administrador/getEspaciosDisponibles', methods=['GET'])
+def get_espacios_disponibles():
+    try:
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consulta SQL para obtener los espacios disponibles del estacionamiento
+        query = """
+            SELECT espaciosDisponibles
+            FROM Estacionamiento
+            LIMIT 1;
+        """
+        cursor.execute(query)
+        estacionamiento = cursor.fetchone()
+
+        if not estacionamiento:
+            return jsonify({
+                "status": 400,
+                "msg": "No se encontró información sobre el estacionamiento."
+            }), 400
+
+        # Obtener el número de espacios disponibles
+        espacios_disponibles = estacionamiento[0]
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver la respuesta con los espacios disponibles
+        return jsonify({
+            "status": 200,
+            "msg": "Espacios disponibles obtenidos correctamente.",
+            "espaciosDisponibles": espacios_disponibles
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener los espacios disponibles: {err}"
+        }), 400
+
+
+'''
+ACÁ VA EL CÓDIGO PARA EL PANEL DE CLIMA ******************************************************************************
+'''
 
 # -----------------------------------------------------------------------------------Clima
 @app.route('/administrador/graficaClima', methods=['GET'])

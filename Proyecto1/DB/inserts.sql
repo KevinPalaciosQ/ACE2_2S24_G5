@@ -1,28 +1,34 @@
 Use arqbased;
 -- Insertar un nuevo administrador con contraseña en formato hash MD5
 INSERT INTO Administrador (usuario, pwd)
-VALUES ('admin1', MD5('admin1')),
-('admin2', MD5('admin2')),
-('admin3', MD5('admin3')),
-('admin4', MD5('admin4')),
-('admin5', MD5('admin5'));
+VALUES ('admin1', MD5('admin1'));
 
 
 -- Insertar usuarios
 INSERT INTO Usuario (nombre, apellido, saldo, RFID, tipoUsuario, estado, id_administrador)
-VALUES ('Juan', 'Perez', 150.75, '860FA022', 'estudiante', 'fuera', 1),
+VALUES ('Juan', 'Perez', 200.00, '860FA022', 'estudiante', 'fuera', 1),
        ('Maria', 'Lopez', 300.50, 'D46BE373', 'administrativo', 'fuera', 1);
 
 -- Insertar usuarios
 INSERT INTO Usuario (nombre, apellido, saldo, RFID, tipoUsuario, estado, id_administrador)
 VALUES ('Veronica', 'Sanchez', 200.00, '789FE373', 'estudiante', 'fuera', 1),
        ('Mauricio', 'Castillo', 100.55, 'C75EB373', 'estudiante', 'fuera', 1);
+
+-- Insertar Externos
+INSERT INTO Externo (nombre, apellido, estado, id_administrador)
+VALUES ('Monica', 'Sanchez', 'fuera', 1),
+       ('Flavio', 'Villa', 'fuera', 1);
        
 -- Insertar vehículos (uno a uno con Usuario)
 INSERT INTO Vehiculo (placa, tipoVehiculo, estado, UID)
 VALUES ('ABC-123', 'sedan', 'permitido', 1),
        ('XYZ-789', 'SUV', 'permitido', 2);
 
+-- Insertar vehículos (uno a uno con Externo)
+INSERT INTO Vehiculo (placa, tipoVehiculo, estado, id_externo)
+VALUES ('ÑLKJ-753', 'toyota', 'permitido', 1),
+       ('QWE-654', 'honda', 'permitido', 2);
+       
 -- Insertar estacionamiento
 INSERT INTO Estacionamiento (capacidad, espaciosDisponibles)
 VALUES (6, 6);

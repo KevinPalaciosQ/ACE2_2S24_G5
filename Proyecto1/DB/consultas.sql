@@ -1,6 +1,7 @@
 Use arqbased;
 SELECT * FROM administrador;
 SELECT * FROM usuario;
+SELECT * FROM externo;
 SELECT * FROM vehiculo;
 SELECT * FROM estacionamiento;
 SELECT * FROM clima;

@@ -14,6 +14,591 @@ def get_db_connection():
         database='arqbased'  # Cambia por tu base de datos
     )
 
+
+'''
+ACÁ VA EL CÓDIGO PARA INGRESO AL PARQUEO ******************************************************************************
+'''
+
+# ----------------------------------------------------------------------------------- INGRESO DE USUARIO ESTUDIANTE O ADMINISTRATIVO
+@app.route('/administrador/entradaUsuario', methods=['POST'])
+def logica_entradaUsuario():
+    try:
+        # Obtener el RFID del request
+        rfid = request.json.get('rfid')
+        
+        if not rfid:
+            return jsonify({
+                "status": 400,
+                "msg": "RFID no proporcionado."
+            }), 400
+
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # 1.1 Comparar el RFID con el RFID almacenado en la base de datos
+        query_usuario = """
+            SELECT UID, nombre, apellido, saldo, Estado, tipoUsuario
+            FROM Usuario
+            WHERE RFID = %s;
+        """
+        cursor.execute(query_usuario, (rfid,))
+        usuario = cursor.fetchone()
+
+        if not usuario:
+            return jsonify({
+                "status": 401,
+                "msg": "Usuario no encontrado."
+            }), 401
+        
+        uid, nombre, apellido, saldo, estado, tipo_usuario = usuario
+
+        # 1.2 Verificar si hay espacio disponible en el estacionamiento
+        query_estacionamiento = """
+            SELECT espaciosDisponibles
+            FROM Estacionamiento
+            LIMIT 1;
+        """
+        cursor.execute(query_estacionamiento)
+        espacios_disponibles = cursor.fetchone()[0]
+
+        if espacios_disponibles == 0:
+            return jsonify({
+                "status": 403,
+                "msg": "Parqueo lleno."
+            }), 403
+
+        # Lógica de costo del parqueo
+        costo_estudiante = 3.00
+        costo_administrativo = 0.00
+        es_externo = False
+
+        # 1.2.1 Si el estado del usuario es "fuera" y el saldo es mayor o igual a Q3.00
+        if estado == 'fuera' and (saldo >= costo_estudiante or tipo_usuario == 'administrativo'):
+            # Si es estudiante
+            if tipo_usuario == 'estudiante':
+                if saldo >= costo_estudiante:
+                    # Restar el costo del parqueo del saldo del estudiante
+                    nuevo_saldo = saldo - costo_estudiante
+                    query_update_saldo = """
+                        UPDATE Usuario SET saldo = %s WHERE UID = %s;
+                    """
+                    cursor.execute(query_update_saldo, (nuevo_saldo, uid))
+
+                    # Actualizar el historial de entrada para el estudiante
+                    query_historial = """
+                        INSERT INTO Historial_Ingreso_Egreso (UID, fecha, horaEntrada, costo, esExterno)
+                        VALUES (%s, CURDATE(), CURTIME(), %s, %s);
+                    """
+                    cursor.execute(query_historial, (uid, costo_estudiante, es_externo))
+
+                else:
+                    return jsonify({
+                        "status": 402,
+                        "msg": "Saldo insuficiente para el estudiante."
+                    }), 402
+
+            # Si es administrativo
+            elif tipo_usuario == 'administrativo':
+                # Registrar la entrada del administrativo en el historial
+                query_historial = """
+                    INSERT INTO Historial_Ingreso_Egreso (UID, fecha, horaEntrada, costo, esExterno)
+                    VALUES (%s, CURDATE(), CURTIME(), %s, %s);
+                """
+                cursor.execute(query_historial, (uid, costo_administrativo, es_externo))
+
+            # Cambiar el estado del usuario a "dentro"
+            query_update_estado = """
+                UPDATE Usuario SET estado = 'dentro' WHERE UID = %s;
+            """
+            cursor.execute(query_update_estado, (uid,))
+
+            # Reducir el espacio disponible en el estacionamiento
+            query_update_espacios = """
+                UPDATE Estacionamiento SET espaciosDisponibles = espaciosDisponibles - 1;
+            """
+            cursor.execute(query_update_espacios)
+
+            # Confirmar cambios
+            db_connection.commit()
+
+            # Mostrar mensaje de bienvenida
+            return jsonify({
+                "status": 200,
+                "msg": f"Bienvenido {nombre} {apellido}. Acceso permitido.",
+                "estadoVehiculo": "permitido"
+            }), 200
+
+        # 1.2.2 Si el estado del usuario es "dentro" o el saldo es menor a Q3.00
+        elif estado == 'dentro' or (tipo_usuario == 'estudiante' and saldo < costo_estudiante):
+            return jsonify({
+                "status": 403,
+                "msg": "Acceso denegado. Estado 'dentro' o saldo insuficiente.",
+                "estadoVehiculo": "denegado"
+            }), 403
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al procesar la entrada: {err}"
+        }), 400
+
+    finally:
+        cursor.close()
+        db_connection.close()
+
+
+# ----------------------------------------------------------------------------------- INGRESO DE USUARIOS EXTERNOS
+@app.route('/administrador/logicaEntradaExterno', methods=['POST'])
+def logica_entrada_externo():
+    try:
+        # Obtener los datos del request
+        ingreso = request.json.get('ingreso')  # 1 indica que es un ingreso
+        id_externo = request.json.get('id_externo')  # ID del usuario externo
+
+        if ingreso != 1 or not id_externo:
+            return jsonify({
+                "status": 400,
+                "msg": "Datos insuficientes. 'ingreso' o 'id_externo' no proporcionado correctamente."
+            }), 400
+
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Verificar el estado del usuario externo en la tabla Externo
+        query_externo = """
+            SELECT estado
+            FROM Externo
+            WHERE id = %s
+        """
+        cursor.execute(query_externo, (id_externo,))
+        externo = cursor.fetchone()
+
+        if not externo:
+            return jsonify({
+                "status": 404,
+                "msg": "Externo no encontrado."
+            }), 404
+
+        estado_externo = externo[0]
+
+        # Verificar si el estado del Externo es "fuera"
+        if estado_externo == "dentro":
+            return jsonify({
+                "status": 400,
+                "msg": "El usuario externo ya está dentro del parqueo."
+            }), 400
+
+        # Verificar los espacios disponibles en el estacionamiento
+        query_estacionamiento = """
+            SELECT capacidad, espaciosDisponibles
+            FROM Estacionamiento
+            LIMIT 1
+        """
+        cursor.execute(query_estacionamiento)
+        estacionamiento = cursor.fetchone()
+
+        if not estacionamiento:
+            return jsonify({
+                "status": 400,
+                "msg": "No se encontró información del estacionamiento."
+            }), 400
+
+        capacidad_total = estacionamiento[0]
+        espacios_disponibles = estacionamiento[1]
+
+        if espacios_disponibles == 0:
+            return jsonify({
+                "status": 400,
+                "msg": "El parqueo está lleno."
+            }), 400
+
+        # Actualizar el estado del usuario externo a "dentro"
+        query_update_externo = """
+            UPDATE Externo
+            SET estado = 'dentro'
+            WHERE id = %s
+        """
+        cursor.execute(query_update_externo, (id_externo,))
+
+        # Registrar la entrada del externo en el historial
+        query_insert_historial = """
+            INSERT INTO Historial_Ingreso_Egreso (id_externo, fechaEntrada, horaEntrada, costo, esExterno)
+            VALUES (%s, CURDATE(), CURTIME(), 3.00, TRUE)
+        """
+        cursor.execute(query_insert_historial, (id_externo,))
+
+        # Reducir el número de espacios disponibles en el estacionamiento
+        query_update_estacionamiento = """
+            UPDATE Estacionamiento
+            SET espaciosDisponibles = espaciosDisponibles - 1
+            WHERE id = (SELECT id FROM Estacionamiento LIMIT 1)
+        """
+        cursor.execute(query_update_estacionamiento)
+
+        # Confirmar cambios
+        db_connection.commit()
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver la respuesta con éxito
+        return jsonify({
+            "status": 200,
+            "msg": "Ingreso permitido para el usuario externo. ¡Bienvenido!",
+        }), 200
+
+    except mysql.connector.Error as err:
+        # Manejo de errores de la base de datos
+        return jsonify({
+            "status": 500,
+            "msg": f"Error al procesar la entrada del usuario externo: {err}"
+        }), 500
+
+    except Exception as e:
+        # Manejo de otros errores
+        return jsonify({
+            "status": 500,
+            "msg": f"Error inesperado: {str(e)}"
+        }), 500
+
+
+'''
+ACÁ VA EL CÓDIGO PARA EGRESO DEL PARQUEO ******************************************************************************
+'''
+# ----------------------------------------------------------------------------------- SALIDA DE USUARIO ESTUDIANTE O ADMINISTRATIVO
+@app.route('/administrador/salidaUsuario', methods=['POST'])
+def logica_salida_Usuario():
+    try:
+        # Obtener el RFID desde el cuerpo de la solicitud
+        rfid = request.json.get('rfid')
+
+        if not rfid:
+            return jsonify({
+                "status": 400,
+                "msg": "RFID no proporcionado."
+            }), 400
+
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Verificar si el RFID existe en la base de datos
+        query_usuario = """
+            SELECT UID, estado 
+            FROM Usuario
+            WHERE RFID = %s
+        """
+        cursor.execute(query_usuario, (rfid,))
+        usuario = cursor.fetchone()
+
+        if not usuario:
+            return jsonify({
+                "status": 404,
+                "msg": "Usuario no encontrado."
+            }), 404
+
+        uid = usuario[0]
+        estado_usuario = usuario[1]
+
+        # Verificar el estado del usuario: Si está "dentro" o "fuera"
+        if estado_usuario == "fuera":
+            return jsonify({
+                "status": 400,
+                "msg": "El usuario ya está fuera del parqueo."
+            }), 400
+
+        # Si el estado es "dentro", permitir la salida
+        # Actualizar el estado del vehículo a "permitido"
+        query_update_vehiculo = """
+            UPDATE Vehiculo
+            SET estado = 'permitido'
+            WHERE UID = %s
+        """
+        cursor.execute(query_update_vehiculo, (uid,))
+
+        # Cambiar el estado del usuario a "fuera"
+        query_update_usuario = """
+            UPDATE Usuario
+            SET estado = 'fuera'
+            WHERE UID = %s
+        """
+        cursor.execute(query_update_usuario, (uid,))
+
+        # Actualizar el historial de ingreso/egreso con la hora de salida
+        query_update_historial = """
+            UPDATE Historial_Ingreso_Egreso
+            SET horaSalida = CURTIME()
+            WHERE UID = %s AND horaSalida IS NULL
+        """
+        cursor.execute(query_update_historial, (uid,))
+
+        # Aumentar el número de espacios disponibles en el estacionamiento
+        query_update_estacionamiento = """
+            UPDATE Estacionamiento
+            SET espaciosDisponibles = espaciosDisponibles + 1
+            WHERE id = (SELECT id FROM Estacionamiento LIMIT 1)
+        """
+        cursor.execute(query_update_estacionamiento)
+
+        # Confirmar cambios
+        db_connection.commit()
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Mostrar mensaje de éxito
+        return jsonify({
+            "status": 200,
+            "msg": "Salida permitida. ¡Vuelva pronto!",
+        }), 200
+
+    except mysql.connector.Error as err:
+        # Manejo de errores de la base de datos
+        return jsonify({
+            "status": 500,
+            "msg": f"Error al procesar la salida: {err}"
+        }), 500
+
+    except Exception as e:
+        # Manejo de otros errores
+        return jsonify({
+            "status": 500,
+            "msg": f"Error inesperado: {str(e)}"
+        }), 500
+
+@app.route('/administrador/pagoSalidaExterno', methods=['POST'])
+def pago_salida_externo():
+    try:
+        # Obtener el pago desde el cuerpo de la solicitud
+        pago = request.json.get('pago')
+        id_externo = request.json.get('id_externo')
+
+        if not pago or not id_externo:
+            return jsonify({
+                "status": 400,
+                "msg": "El pago o ID de externo no se ha proporcionado."
+            }), 400
+
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Verificar si el usuario externo está "dentro" del parqueo
+        query_externo = """
+            SELECT estado 
+            FROM Externo
+            WHERE id = %s
+        """
+        cursor.execute(query_externo, (id_externo,))
+        externo = cursor.fetchone()
+
+        if not externo:
+            return jsonify({
+                "status": 404,
+                "msg": "Usuario externo no encontrado."
+            }), 404
+
+        estado_externo = externo[0]
+
+        # Verificar si el estado del externo es "dentro"
+        if estado_externo == 'fuera':
+            return jsonify({
+                "status": 400,
+                "msg": "El usuario externo ya está fuera del parqueo. Salida denegada."
+            }), 400
+
+        # Verificar si el pago es correcto y coincide con el historial de ingreso
+        query_historial = """
+            SELECT costo 
+            FROM Historial_Ingreso_Egreso
+            WHERE id_externo = %s AND horaSalida IS NULL
+        """
+        cursor.execute(query_historial, (id_externo,))
+        historial = cursor.fetchone()
+
+        if not historial:
+            return jsonify({
+                "status": 400,
+                "msg": "No se encontró registro de ingreso para el usuario externo."
+            }), 400
+
+        costo_historial = historial[0]
+
+        # Comparar el pago realizado con el costo del historial
+        if pago != costo_historial:
+            return jsonify({
+                "status": 400,
+                "msg": "El pago realizado no coincide con el costo. Salida denegada."
+            }), 400
+
+        # Permitir la salida: Actualizar el estado del usuario externo a "fuera"
+        query_update_externo = """
+            UPDATE Externo
+            SET estado = 'fuera'
+            WHERE id = %s
+        """
+        cursor.execute(query_update_externo, (id_externo,))
+
+        # Actualizar el estado del vehículo a "permitido"
+        query_update_vehiculo = """
+            UPDATE Vehiculo
+            SET estado = 'permitido'
+            WHERE id_externo = %s
+        """
+        cursor.execute(query_update_vehiculo, (id_externo,))
+
+        # Actualizar el historial de ingreso/egreso con la hora de salida
+        query_update_historial = """
+            UPDATE Historial_Ingreso_Egreso
+            SET horaSalida = CURTIME()
+            WHERE id_externo = %s AND horaSalida IS NULL
+        """
+        cursor.execute(query_update_historial, (id_externo,))
+
+        # Aumentar el número de espacios disponibles en el estacionamiento
+        query_update_estacionamiento = """
+            UPDATE Estacionamiento
+            SET espaciosDisponibles = espaciosDisponibles + 1
+            WHERE id = (SELECT id FROM Estacionamiento LIMIT 1)
+        """
+        cursor.execute(query_update_estacionamiento)
+
+        # Confirmar los cambios
+        db_connection.commit()
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Mostrar mensaje de éxito
+        return jsonify({
+            "status": 200,
+            "msg": "Pago recibido correctamente. Salida permitida. ¡Vuelva pronto!",
+        }), 200
+
+    except mysql.connector.Error as err:
+        # Manejo de errores de la base de datos
+        return jsonify({
+            "status": 500,
+            "msg": f"Error al procesar el pago y la salida: {err}"
+        }), 500
+
+    except Exception as e:
+        # Manejo de otros errores
+        return jsonify({
+            "status": 500,
+            "msg": f"Error inesperado: {str(e)}"
+        }), 500
+
+
+# ----------------------------------------------------------------------------------- SALIDA DE USUARIOS EXTERNOS
+
+
+'''
+ACÁ VA EL CÓDIGO PARA EL PANEL DE CLIMA ******************************************************************************
+'''
+# ----------------------------------------------------------------------------------- INSERTANDO DATOS EN CLIMA
+@app.route('/administrador/insertarClima', methods=['POST'])
+def insertar_clima():
+    try:
+        # Obtener los datos enviados en la solicitud POST
+        data = request.get_json()
+        temperatura = data.get('temperatura')
+        humedad = data.get('humedad')
+
+        # Validar que temperatura y humedad estén presentes
+        if temperatura is None or humedad is None:
+            return jsonify({
+                "status": 400,
+                "msg": "Faltan datos: temperatura y humedad son requeridos."
+            }), 400
+
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consulta SQL para insertar el clima
+        query_insert_clima = """
+            INSERT INTO Clima (temperatura, humedad, id_administrador)
+            VALUES (%s, %s, %s);
+        """
+        # id_administrador se fija en 1 para este ejemplo
+        cursor.execute(query_insert_clima, (temperatura, humedad, 1))
+
+        # Confirmar la inserción
+        db_connection.commit()
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver una respuesta de éxito
+        return jsonify({
+            "status": 200,
+            "msg": "Datos de clima insertados correctamente."
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al insertar datos de clima: {err}"
+        }), 400
+
+
+# ----------------------------------------------------------------------------------- OBTENER DATOS DEL CLIMA
+@app.route('/administrador/getClimaActual', methods=['GET'])
+def get_clima_actual():
+    try:
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consulta SQL para obtener el último registro de clima
+        query_get_clima = """
+            SELECT temperatura, humedad, fecha
+            FROM Clima
+            ORDER BY fecha DESC
+            LIMIT 1;
+        """
+        cursor.execute(query_get_clima)
+        clima = cursor.fetchone()
+
+        if not clima:
+            return jsonify({
+                "status": 400,
+                "msg": "No se encontraron datos de clima."
+            }), 400
+
+        # Extraer los valores de temperatura, humedad y fecha del resultado
+        temperatura, humedad, fecha = clima
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver los datos de clima en la respuesta
+        return jsonify({
+            "status": 200,
+            "msg": "Datos de clima obtenidos correctamente.",
+            "temperatura": temperatura,
+            "humedad": humedad,
+            "fecha": fecha.strftime('%Y-%m-%d %H:%M:%S')  # Formato de fecha y hora
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener los datos de clima: {err}"
+        }), 400
+
+
+
+
+
 '''
 ACÁ VA EL CÓDIGO PARA EL PANEL DE USUARIOS, INCLUYENDO EL LOGIN ******************************************************************************
 '''
@@ -707,88 +1292,6 @@ def get_vehiculos_tiempo_real():
             "msg": f"Error al obtener los datos de vehículos: {err}"
         }), 400
 
-
-'''
-ACÁ VA EL CÓDIGO PARA EL PANEL DE CLIMA ******************************************************************************
-'''
-
-# -----------------------------------------------------------------------------------Clima
-@app.route('/administrador/graficaClima', methods=['GET'])
-def get_clima():
-    db_connection = get_db_connection()
-    cursor = db_connection.cursor()
-    cursor.execute("SELECT * FROM Usuario")
-    rows = cursor.fetchall()
-    cursor.close()
-    db_connection.close()
-    
-    usuarios = []
-    for row in rows:
-        usuarios.append({
-            "UID": row[0],
-            "nombre": row[1],
-            "apellido": row[2],
-            "saldo": row[3],
-            "RFID": row[4],
-            "tipoUsuario": row[5]
-        })
-    return jsonify(usuarios)
-
-
-'''
-def connect_to_mysql():
-    try:
-        # Crear la conexión a MySQL
-        connection = mysql.connector.connect(
-            host='localhost',  # Cambia si tu servidor no está en localhost
-            port=3306,         # Cambia si tu servidor usa otro puerto
-            user='root',       # Cambia según tu usuario de MySQL
-            password='dedicadoArqui2',  # Cambia por tu contraseña de MySQL
-            database='arqbased'  # Cambia por tu base de datos
-        )
-
-        if connection.is_connected():
-            print("Conexión exitosa a MySQL")
-            cursor = connection.cursor()
-            
-            # Ejecutar una consulta simple
-            cursor.execute("SELECT * FROM Historial_Ingreso_Egreso;")
-            rows = cursor.fetchall()
-
-            print("Datos de la tabla:")
-            for row in rows:
-                # Desempaquetar las columnas de la fila
-                (id, UID, id_vehiculo, id_estacionamiento, fecha_entrada, hora_entrada, hora_salida, costo) = row
-
-                # Formatear la fecha de entrada
-                fecha_entrada_str = fecha_entrada.strftime('%Y-%m-%d')
-
-                # Formatear la hora de entrada (timedelta a horas, minutos y segundos)
-                hora_entrada_str = (timedelta(seconds=hora_entrada.seconds) 
-                                    if isinstance(hora_entrada, timedelta) 
-                                    else hora_entrada)
-
-                # Formatear la hora de salida (puede ser None si no ha salido)
-                hora_salida_str = (timedelta(seconds=hora_salida.seconds) 
-                                   if isinstance(hora_salida, timedelta) 
-                                   else 'No ha salido')
-
-                # Imprimir los resultados formateados
-                print(f"ID: {id}, UID: {UID}, Vehículo: {id_vehiculo}, Estacionamiento: {id_estacionamiento}")
-                print(f"Fecha de Entrada: {fecha_entrada_str}")
-                print(f"Hora de Entrada: {hora_entrada_str}")
-                print(f"Hora de Salida: {hora_salida_str}")
-                print(f"Costo: {costo}")
-                print("-----")
-
-    except Error as e:
-        print(f"Error al conectar con MySQL: {e}")
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-            print("Conexión cerrada")
-'''
 #if __name__ == "__main__":
 #    connect_to_mysql()
 

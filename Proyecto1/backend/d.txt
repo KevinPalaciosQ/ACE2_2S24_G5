@@ -1,1 +1,8 @@
+Para correr el servidor
 python main.py
+
+instalación de flask
+pip install flask
+
+Para instalar cors
+pip install flask-cors

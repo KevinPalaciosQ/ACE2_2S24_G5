@@ -2,8 +2,11 @@ import mysql.connector
 from mysql.connector import Error
 import datetime
 from flask import Flask, jsonify, request
+from flask_cors import CORS  # Importa CORS
 import hashlib
 app = Flask(__name__)
+
+CORS(app)
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -370,6 +373,8 @@ def logica_salida_Usuario():
             "msg": f"Error inesperado: {str(e)}"
         }), 500
 
+# ----------------------------------------------------------------------------------- SALIDA DE USUARIOS EXTERNOS
+
 @app.route('/administrador/pagoSalidaExterno', methods=['POST'])
 def pago_salida_externo():
     try:
@@ -493,9 +498,6 @@ def pago_salida_externo():
             "status": 500,
             "msg": f"Error inesperado: {str(e)}"
         }), 500
-
-
-# ----------------------------------------------------------------------------------- SALIDA DE USUARIOS EXTERNOS
 
 
 '''

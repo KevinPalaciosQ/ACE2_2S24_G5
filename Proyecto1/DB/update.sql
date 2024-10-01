@@ -2,6 +2,10 @@ UPDATE Estacionamiento
 SET espaciosDisponibles = espaciosDisponibles - 1
 WHERE id = 1;
 
+UPDATE Estacionamiento
+SET espaciosDisponibles = espaciosDisponibles + 1
+WHERE id = 1;
+
 SELECT espaciosDisponibles 
 FROM Estacionamiento
 WHERE id = 1;
@@ -15,7 +19,7 @@ SET estado = 'dentro'
 WHERE UID = 1;
 
 UPDATE Historial_Ingreso_Egreso
-SET horaSalida = '10:00:00'
+SET horaSalida = CURTIME()
 WHERE id = 1;
 
 UPDATE Usuario
@@ -29,3 +33,12 @@ WHERE UID = 2;
 UPDATE vehiculo
 SET estado = 'denegado'
 WHERE id = 1;
+
+
+UPDATE Externo
+SET estado = 'dentro'
+WHERE id = 1;
+
+UPDATE Historial_Ingreso_Egreso
+SET horaSalida = CURTIME()
+WHERE id = 3;

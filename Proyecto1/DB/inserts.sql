@@ -44,7 +44,8 @@ INSERT INTO Historial_Ingreso_Egreso (UID, id_vehiculo, id_estacionamiento, fech
 VALUES (1, 1, 1, '2024-09-25', '08:00:00', 3.00),
        (2, 2, 1, '2024-09-25', '09:30:00', 0.00);
        
--- Insertar historial de ingreso y egreso
-INSERT INTO Historial_Ingreso_Egreso (UID, id_vehiculo, id_estacionamiento, fechaEntrada, horaEntrada, costo)
-VALUES (1, 1, 1, CURDATE(), CURTIME(), 3.00);
+-- Insertar historial de ingreso y egreso de usuario
+INSERT INTO Historial_Ingreso_Egreso (id_externo, id_vehiculo, id_estacionamiento, fechaEntrada, horaEntrada, costo, esExterno)
+VALUES (1, 3, 1, CURDATE(), CURTIME(), 3.00, true);
+-- (2, 2, 1, CURDATE(), CURTIME(), 3.00, false);
        

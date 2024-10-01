@@ -1,6 +1,6 @@
 import mysql.connector
 from mysql.connector import Error
-from datetime import timedelta
+import datetime
 from flask import Flask, jsonify, request
 import hashlib
 app = Flask(__name__)
@@ -508,15 +508,204 @@ def get_espacios_disponibles():
 
 # -------------------------------------------------------------------   OBTENER EL PORCENTAJE DE OCUPACIÓN DENTRO DEL PARQUEO
 
+@app.route('/administrador/getPorcentajeOcupacion', methods=['GET'])
+def get_porcentaje_ocupacion():
+    try:
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consulta SQL para obtener la capacidad total y los espacios disponibles del estacionamiento
+        query = """
+            SELECT capacidad, espaciosDisponibles
+            FROM Estacionamiento
+            LIMIT 1;
+        """
+        cursor.execute(query)
+        estacionamiento = cursor.fetchone()
+
+        if not estacionamiento:
+            return jsonify({
+                "status": 400,
+                "msg": "No se encontró información sobre el estacionamiento."
+            }), 400
+
+        # Obtener los valores de capacidad y espacios disponibles
+        capacidad_total = estacionamiento[0]
+        espacios_disponibles = estacionamiento[1]
+
+        # Calcular el porcentaje de ocupación
+        vehiculos_ocupando = capacidad_total - espacios_disponibles
+        porcentaje_ocupacion = (vehiculos_ocupando / capacidad_total) * 100
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver la respuesta con el porcentaje de ocupación
+        return jsonify({
+            "status": 200,
+            "msg": "Porcentaje de ocupación obtenido correctamente.",
+            "porcentajeOcupacion": round(porcentaje_ocupacion, 2)
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener el porcentaje de ocupación: {err}"
+        }), 400
+
+# -------------------------------------------------------------------   OBTENER EL PORCENTAJE DE USUARIOS EXTERNOS
+@app.route('/administrador/getPorcentajeExternos', methods=['GET'])
+def get_porcentaje_externos():
+    try:
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consulta SQL para contar el total de registros en Historial_Ingreso_Egreso
+        query_total = """
+            SELECT COUNT(*) 
+            FROM Historial_Ingreso_Egreso
+            WHERE horaSalida IS NOT NULL;
+        """
+        cursor.execute(query_total)
+        total_registros = cursor.fetchone()[0]
+
+        if total_registros == 0:
+            return jsonify({
+                "status": 400,
+                "msg": "No se han encontrado registros de ingresos y salidas."
+            }), 400
+
+        # Consulta SQL para contar los usuarios externos en el historial
+        query_externos = """
+            SELECT COUNT(*)
+            FROM Historial_Ingreso_Egreso
+            WHERE esExterno = TRUE AND horaSalida IS NOT NULL;
+        """
+        cursor.execute(query_externos)
+        total_externos = cursor.fetchone()[0]
+
+        # Calcular el porcentaje de usuarios externos
+        porcentaje_externos = (total_externos / total_registros) * 100
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver la respuesta con el porcentaje de usuarios externos
+        return jsonify({
+            "status": 200,
+            "msg": "Porcentaje de usuarios externos obtenido correctamente.",
+            "porcentajeExternos": round(porcentaje_externos, 2)
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener el porcentaje de usuarios externos: {err}"
+        }), 400
+
+# -------------------------------------------------------------------   NUMERO DE VEHÍCULOS QUE HAN INGRESADO Y SALIDO DEL PARQUEO EN TODO EL DIA
+
+@app.route('/administrador/getVehiculosDia', methods=['GET'])
+def get_vehiculos_dia():
+    try:
+        # Obtener fecha actual para limitar la búsqueda al día de hoy
+        fecha_hoy = datetime.date.today()
+
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
+
+        # Consulta para obtener el número de vehículos que ingresaron hoy
+        query_ingresados = """
+            SELECT COUNT(*) 
+            FROM Historial_Ingreso_Egreso 
+            WHERE fechaEntrada = %s;
+        """
+        cursor.execute(query_ingresados, (fecha_hoy,))
+        total_ingresados = cursor.fetchone()[0]
+
+        # Consulta para obtener el número de vehículos que salieron hoy
+        query_salidos = """
+            SELECT COUNT(*) 
+            FROM Historial_Ingreso_Egreso 
+            WHERE horaSalida IS NOT NULL AND fechaEntrada = %s;
+        """
+        cursor.execute(query_salidos, (fecha_hoy,))
+        total_salidos = cursor.fetchone()[0]
+
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
+
+        # Devolver la respuesta con los datos de ingresados y salidos
+        return jsonify({
+            "status": 200,
+            "msg": "Vehículos ingresados y salidos obtenidos correctamente.",
+            "vehiculosIngresados": total_ingresados,
+            "vehiculosSalidos": total_salidos
+        }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener los datos de vehículos: {err}"
+        }), 400
 
 
+# lo mismo que el anterior pero para manejo en tiempo real            utilizar esta petición de preferencia
+@app.route('/administrador/getVehiculosTiempoReal', methods=['GET'])
+def get_vehiculos_tiempo_real():
+    try:
+        # Obtener fecha actual para limitar la búsqueda al día de hoy
+        fecha_hoy = datetime.date.today()
 
+        # Conectar a la base de datos
+        db_connection = get_db_connection()
+        cursor = db_connection.cursor()
 
+        # Consulta para obtener el número de vehículos que ingresaron hoy
+        query_ingresados = """
+            SELECT COUNT(*) 
+            FROM Historial_Ingreso_Egreso 
+            WHERE fechaEntrada = %s;
+        """
+        cursor.execute(query_ingresados, (fecha_hoy,))
+        total_ingresados = cursor.fetchone()[0]
 
+        # Consulta para obtener el número de vehículos que están fuera (que ya salieron hoy)
+        query_salidos = """
+            SELECT COUNT(*) 
+            FROM Historial_Ingreso_Egreso 
+            WHERE horaSalida IS NOT NULL AND fechaEntrada = %s;
+        """
+        cursor.execute(query_salidos, (fecha_hoy,))
+        total_salidos = cursor.fetchone()[0]
 
+        # Cerrar cursor y conexión
+        cursor.close()
+        db_connection.close()
 
+        # Calcular los vehículos dentro (ingresados - salidos)
+        vehiculos_dentro = total_ingresados - total_salidos
 
+        # Devolver la respuesta con los datos de ingresados, salidos y vehículos dentro
+        return jsonify({
+            "status": 200,
+            "msg": "Datos de vehículos en tiempo real obtenidos correctamente.",
+            "vehiculosIngresados": total_ingresados,
+            "vehiculosSalidos": total_salidos,
+            "vehiculosDentro": vehiculos_dentro
+        }), 200
 
+    except mysql.connector.Error as err:
+        return jsonify({
+            "status": 400,
+            "msg": f"Error al obtener los datos de vehículos: {err}"
+        }), 400
 
 
 '''

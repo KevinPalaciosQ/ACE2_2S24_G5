@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Button, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper } from '@mui/material';
+import {
+  Box, Button, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import Animate from "../components/common/Animate";
 import MPaper from '../components/common/MPaper';
 
@@ -15,14 +18,16 @@ const data = [
 
 // Datos de ejemplo para el resumen
 const resumeData = [
-  { balance: '1000 USD', status: 'Active', userType: 'Admin' },
-  { balance: '500 USD', status: 'Inactive', userType: 'User' },
-  { balance: '750 USD', status: 'Active', userType: 'Guest' },
+  { balance: 1000, status: 'Active', userType: 'Admin' },
+  { balance: 500, status: 'Inactive', userType: 'User' },
+  { balance: 750, status: 'Active', userType: 'Guest' },
 ];
 
 const InfoPage = () => {
   const [page, setPage] = useState(0);
-  const rowsPerPage = 3; // Cambia esto para mostrar más o menos filas por página
+  const [selectedBalance, setSelectedBalance] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const rowsPerPage = 3;
 
   const handleNext = () => {
     if ((page + 1) * rowsPerPage < data.length) {
@@ -37,8 +42,22 @@ const InfoPage = () => {
   };
 
   const handleSelect = (index) => {
-    // Lógica para manejar la selección de la fila
-    console.log(`Selected: ${resumeData[index].balance}`);
+    setSelectedBalance(resumeData[index].balance);
+    setOpenDialog(true); // Abre el diálogo
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  const handleAdd = () => {
+    setSelectedBalance(selectedBalance + 3); // Sumar Q3
+  };
+
+  const handleSubtract = () => {
+    if (selectedBalance > 0) {
+      setSelectedBalance(selectedBalance - 3); // Restar Q3 si es mayor a 0
+    }
   };
 
   return (
@@ -105,7 +124,7 @@ const InfoPage = () => {
                 <TableBody>
                   {resumeData.map((resume, index) => (
                     <TableRow key={index} sx={{ '&:hover': { backgroundColor: '#c8e6c9' } }}>
-                      <TableCell>{resume.balance}</TableCell>
+                      <TableCell>Q.{resume.balance}</TableCell>
                       <TableCell>{resume.status}</TableCell>
                       <TableCell>{resume.userType}</TableCell>
                       <TableCell>
@@ -121,6 +140,31 @@ const InfoPage = () => {
           </MPaper>
         </Animate>
       </Grid>
+
+      {/* Dialog para mostrar saldo y botones de más/menos */}
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>
+          Balance: Q.{selectedBalance}
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseDialog}
+            sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">Do you want to adjust the balance?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSubtract} variant="contained" sx={{ backgroundColor: '#f44336', '&:hover': { backgroundColor: '#d32f2f' } }}>
+            -
+          </Button>
+          <Button onClick={handleAdd} variant="contained" sx={{ backgroundColor: '#4caf50', '&:hover': { backgroundColor: '#388e3c' } }}>
+            +
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   );
 };

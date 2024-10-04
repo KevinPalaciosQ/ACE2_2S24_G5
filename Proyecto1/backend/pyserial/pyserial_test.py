@@ -15,9 +15,9 @@ def weather_request(humidity_data, temp_data):
     responseLoginAdmin = requests.post(url+'/administrador/insertarClima', json=weather_data)
 
     if responseLoginAdmin.status_code == 200:
-        print("Datos enviados correctamente:", response.json())
+        print("Datos enviados correctamente:", responseLoginAdmin.json())
     else:
-        print(f"Error {response.status_code}: {response.json()}")
+        print(f"Error {responseLoginAdmin.status_code}: {responseLoginAdmin.json()}")
 
 def userlogin_request(id, path):
     data = {

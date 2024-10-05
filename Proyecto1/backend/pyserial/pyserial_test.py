@@ -3,7 +3,7 @@ import serial
 import json
 import re, random, string, requests
 
-url = 'http://localhost:3306'
+url = 'http://localhost:5000'
 ard_object = serial.Serial('COM3', 9600)
 time.sleep(2)  # Esperar a que la conexión se establezca
 
@@ -19,12 +19,17 @@ def weather_request(humidity_data, temp_data):
     else:
         print(f"Error {responseLoginAdmin.status_code}: {responseLoginAdmin.json()}")
 
+
+
 def userlogin_request(id, path):
     data = {
         "rfid"  : id
     }
+    print(url + path)
     responseLogin = requests.post(url+path, json=data)
     print(responseLogin.json())
+
+
 
 def userlogout_request(id, path):
     data = {
@@ -32,6 +37,8 @@ def userlogout_request(id, path):
     }
     responseLogout = requests.post(url+path, json=data)
     print(responseLogout.json())
+
+
 
 
 while True:
@@ -120,7 +127,7 @@ while True:
                     }
                     print(json.dumps(data_json, indent=4))
 
-                    userlogout_request(id, '/administrador/entradaUsuario')
+                    userlogout_request(id, '/administrador/salidaUsuario')
                     weather_request(humidity_value, temp_value)
 
                 elif user_type[1] == "Student":
@@ -138,7 +145,7 @@ while True:
                     }
                     print(json.dumps(data_json, indent=4))
 
-                    userlogout_request(id, '/administrador/entradaUsuario')
+                    userlogout_request(id, '/administrador/salidaUsuario')
                     weather_request(humidity_value, temp_value)
 
                 elif user_type[1] == "External":
@@ -163,5 +170,3 @@ while True:
             print(f"Error al procesar los datos: {ValueError}")
     else:
         time.sleep(0.1)  # Esperar un poco antes de volver a comprobar
-
-

@@ -7,10 +7,11 @@ SELECT * FROM estacionamiento;
 SELECT * FROM clima;
 SELECT * FROM historial_ingreso_egreso;
 
-SELECT h.id, u.nombre, u.apellido, v.placa, h.fechaEntrada, h.horaEntrada, h.horaSalida, h.costo
-FROM Historial_Ingreso_Egreso h
-JOIN Usuario u ON h.UID = u.UID
-JOIN Vehiculo v ON h.id_vehiculo = v.id
-WHERE u.UID = 1;
+SELECT espaciosDisponibles from Estacionamiento;
 
-SELECT humedad FROM clima;
+SELECT id from vehiculo where UID = 2;
+SELECT id from vehiculo where id_externo = 2;
+
+SELECT espaciosDisponibles
+FROM Estacionamiento
+LIMIT 1;

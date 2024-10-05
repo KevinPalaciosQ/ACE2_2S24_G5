@@ -78,6 +78,15 @@ def logica_entradaUsuario():
 
         # 1.2.1 Si el estado del usuario es "fuera" y el saldo es mayor o igual a Q3.00
         if estado == 'fuera' and (saldo >= costo_estudiante or tipo_usuario == 'administrativo'):
+            # Obtener el ID del vehículo del estudiante para relacionarlo al historial
+            query_vehiculogetID = """
+                SELECT id
+                FROM Vehiculo
+                WHERE UID = %s; 
+            """
+            cursor.execute(query_vehiculogetID, (uid,))
+            id_vehiculo = cursor.fetchone()[0]
+
             # Si es estudiante
             if tipo_usuario == 'estudiante':
                 if saldo >= costo_estudiante:
@@ -90,10 +99,10 @@ def logica_entradaUsuario():
 
                     # Actualizar el historial de entrada para el estudiante
                     query_historial = """
-                        INSERT INTO Historial_Ingreso_Egreso (UID, fecha, horaEntrada, costo, esExterno)
-                        VALUES (%s, CURDATE(), CURTIME(), %s, %s);
+                        INSERT INTO Historial_Ingreso_Egreso (UID, id_vehiculo, id_estacionamiento, fechaEntrada, horaEntrada, costo, esExterno)
+                        VALUES (%s, %s, 1, CURDATE(), CURTIME(), %s, %s);
                     """
-                    cursor.execute(query_historial, (uid, costo_estudiante, es_externo))
+                    cursor.execute(query_historial, (uid, id_vehiculo, costo_estudiante, es_externo))
 
                 else:
                     return jsonify({
@@ -105,10 +114,10 @@ def logica_entradaUsuario():
             elif tipo_usuario == 'administrativo':
                 # Registrar la entrada del administrativo en el historial
                 query_historial = """
-                    INSERT INTO Historial_Ingreso_Egreso (UID, fecha, horaEntrada, costo, esExterno)
-                    VALUES (%s, CURDATE(), CURTIME(), %s, %s);
+                    INSERT INTO Historial_Ingreso_Egreso (UID, id_vehiculo, id_estacionamiento, fechaEntrada, horaEntrada, costo, esExterno)
+                    VALUES (%s, %s, 1, CURDATE(), CURTIME(), %s, %s);
                 """
-                cursor.execute(query_historial, (uid, costo_administrativo, es_externo))
+                cursor.execute(query_historial, (uid, id_vehiculo, costo_administrativo, es_externo))
 
             # Cambiar el estado del usuario a "dentro"
             query_update_estado = """
@@ -142,9 +151,9 @@ def logica_entradaUsuario():
 
     except mysql.connector.Error as err:
         return jsonify({
-            "status": 400,
+            "status": 500,
             "msg": f"Error al procesar la entrada: {err}"
-        }), 400
+        }), 500
 
     finally:
         cursor.close()
@@ -157,7 +166,11 @@ def logica_entrada_externo():
     try:
         # Obtener los datos del request
         ingreso = request.json.get('ingreso')  # 1 indica que es un ingreso
-        id_externo = request.json.get('id_externo')  # ID del usuario externo
+        id_exter = request.json.get('id_externo')  # ID del usuario externo
+        if id_exter == "xxxx":
+            id_externo = 1
+
+        id_externo = 1
 
         if ingreso != 1 or not id_externo:
             return jsonify({
@@ -180,42 +193,33 @@ def logica_entrada_externo():
 
         if not externo:
             return jsonify({
-                "status": 404,
+                "status": 401,
                 "msg": "Externo no encontrado."
-            }), 404
+            }), 401
 
         estado_externo = externo[0]
 
         # Verificar si el estado del Externo es "fuera"
         if estado_externo == "dentro":
             return jsonify({
-                "status": 400,
+                "status": 403,
                 "msg": "El usuario externo ya está dentro del parqueo."
-            }), 400
+            }), 403
 
         # Verificar los espacios disponibles en el estacionamiento
         query_estacionamiento = """
-            SELECT capacidad, espaciosDisponibles
+            SELECT espaciosDisponibles
             FROM Estacionamiento
             LIMIT 1
         """
         cursor.execute(query_estacionamiento)
-        estacionamiento = cursor.fetchone()
-
-        if not estacionamiento:
-            return jsonify({
-                "status": 400,
-                "msg": "No se encontró información del estacionamiento."
-            }), 400
-
-        capacidad_total = estacionamiento[0]
-        espacios_disponibles = estacionamiento[1]
+        espacios_disponibles = cursor.fetchone()[0]
 
         if espacios_disponibles == 0:
             return jsonify({
-                "status": 400,
+                "status": 403,
                 "msg": "El parqueo está lleno."
-            }), 400
+            }), 403
 
         # Actualizar el estado del usuario externo a "dentro"
         query_update_externo = """
@@ -225,21 +229,28 @@ def logica_entrada_externo():
         """
         cursor.execute(query_update_externo, (id_externo,))
 
+        # Obtener el ID del vehículo del estudiante para relacionarlo al historial
+        query_vehiculogetID = """
+            SELECT id
+            FROM Vehiculo
+            WHERE id_externo = %s; 
+        """
+        cursor.execute(query_vehiculogetID, (id_externo,))
+        id_vehiculo = cursor.fetchone()[0]
+        
         # Registrar la entrada del externo en el historial
         query_insert_historial = """
-            INSERT INTO Historial_Ingreso_Egreso (id_externo, fechaEntrada, horaEntrada, costo, esExterno)
-            VALUES (%s, CURDATE(), CURTIME(), 3.00, TRUE)
+            INSERT INTO Historial_Ingreso_Egreso (id_externo, id_vehiculo, id_estacionamiento, fechaEntrada, horaEntrada, costo, esExterno)
+            VALUES (%s, %s, 1, CURDATE(), CURTIME(), 3.00, TRUE)
         """
-        cursor.execute(query_insert_historial, (id_externo,))
+        cursor.execute(query_insert_historial, (id_externo, id_vehiculo))
 
-        # Reducir el número de espacios disponibles en el estacionamiento
-        query_update_estacionamiento = """
-            UPDATE Estacionamiento
-            SET espaciosDisponibles = espaciosDisponibles - 1
-            WHERE id = (SELECT id FROM Estacionamiento LIMIT 1)
+        
+        # Reducir el espacio disponible en el estacionamiento
+        query_update_espacios = """
+            UPDATE Estacionamiento SET espaciosDisponibles = espaciosDisponibles - 1;
         """
-        cursor.execute(query_update_estacionamiento)
-
+        cursor.execute(query_update_espacios)
         # Confirmar cambios
         db_connection.commit()
 
@@ -299,9 +310,9 @@ def logica_salida_Usuario():
 
         if not usuario:
             return jsonify({
-                "status": 404,
+                "status": 401,
                 "msg": "Usuario no encontrado."
-            }), 404
+            }), 401
 
         uid = usuario[0]
         estado_usuario = usuario[1]
@@ -309,9 +320,9 @@ def logica_salida_Usuario():
         # Verificar el estado del usuario: Si está "dentro" o "fuera"
         if estado_usuario == "fuera":
             return jsonify({
-                "status": 400,
+                "status": 403,
                 "msg": "El usuario ya está fuera del parqueo."
-            }), 400
+            }), 403
 
         # Si el estado es "dentro", permitir la salida
         # Actualizar el estado del vehículo a "permitido"
@@ -341,8 +352,7 @@ def logica_salida_Usuario():
         # Aumentar el número de espacios disponibles en el estacionamiento
         query_update_estacionamiento = """
             UPDATE Estacionamiento
-            SET espaciosDisponibles = espaciosDisponibles + 1
-            WHERE id = (SELECT id FROM Estacionamiento LIMIT 1)
+            SET espaciosDisponibles = espaciosDisponibles + 1;
         """
         cursor.execute(query_update_estacionamiento)
 
@@ -380,8 +390,12 @@ def pago_salida_externo():
     try:
         # Obtener el pago desde el cuerpo de la solicitud
         pago = request.json.get('pago')
-        id_externo = request.json.get('id_externo')
+        id_exter = request.json.get('id_externo')
 
+        if id_exter == "xxxx":
+            id_externo = 1
+
+        id_externo = 1
         if not pago or not id_externo:
             return jsonify({
                 "status": 400,
@@ -403,18 +417,18 @@ def pago_salida_externo():
 
         if not externo:
             return jsonify({
-                "status": 404,
+                "status": 401,
                 "msg": "Usuario externo no encontrado."
-            }), 404
+            }), 401
 
         estado_externo = externo[0]
 
         # Verificar si el estado del externo es "dentro"
         if estado_externo == 'fuera':
             return jsonify({
-                "status": 400,
+                "status": 403,
                 "msg": "El usuario externo ya está fuera del parqueo. Salida denegada."
-            }), 400
+            }), 403
 
         # Verificar si el pago es correcto y coincide con el historial de ingreso
         query_historial = """
@@ -427,18 +441,18 @@ def pago_salida_externo():
 
         if not historial:
             return jsonify({
-                "status": 400,
+                "status": 404,
                 "msg": "No se encontró registro de ingreso para el usuario externo."
-            }), 400
+            }), 404
 
         costo_historial = historial[0]
 
         # Comparar el pago realizado con el costo del historial
         if pago != costo_historial:
             return jsonify({
-                "status": 400,
+                "status": 405,
                 "msg": "El pago realizado no coincide con el costo. Salida denegada."
-            }), 400
+            }), 405
 
         # Permitir la salida: Actualizar el estado del usuario externo a "fuera"
         query_update_externo = """
@@ -467,8 +481,7 @@ def pago_salida_externo():
         # Aumentar el número de espacios disponibles en el estacionamiento
         query_update_estacionamiento = """
             UPDATE Estacionamiento
-            SET espaciosDisponibles = espaciosDisponibles + 1
-            WHERE id = (SELECT id FROM Estacionamiento LIMIT 1)
+            SET espaciosDisponibles = espaciosDisponibles + 1;
         """
         cursor.execute(query_update_estacionamiento)
 

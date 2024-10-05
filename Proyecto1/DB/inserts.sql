@@ -3,11 +3,10 @@ Use arqbased;
 INSERT INTO Administrador (usuario, pwd)
 VALUES ('admin1', MD5('admin1'));
 
-
 -- Insertar usuarios
 INSERT INTO Usuario (nombre, apellido, saldo, RFID, tipoUsuario, estado, id_administrador)
-VALUES ('Juan', 'Perez', 200.00, '860FA022', 'estudiante', 'fuera', 1),
-       ('Maria', 'Lopez', 300.50, 'D46BE373', 'administrativo', 'fuera', 1);
+VALUES ('Juan', 'Perez', 200.00, 'D46BE373', 'estudiante', 'fuera', 1),
+       ('Maria', 'Lopez', 300.50, '860FA022', 'administrativo', 'fuera', 1);
 
 -- Insertar usuarios
 INSERT INTO Usuario (nombre, apellido, saldo, RFID, tipoUsuario, estado, id_administrador)
@@ -39,12 +38,12 @@ VALUES (40, 70, 1),
 (32, 50, 1);
 -- VALUES (25.5, 60, 1), (26.3, 58, 1);
 
--- Insertar historial de ingreso y egreso
+-- Insertar historial de ingreso y egreso de usuario
 INSERT INTO Historial_Ingreso_Egreso (UID, id_vehiculo, id_estacionamiento, fechaEntrada, horaEntrada, costo)
 VALUES (1, 1, 1, '2024-09-25', '08:00:00', 3.00),
        (2, 2, 1, '2024-09-25', '09:30:00', 0.00);
        
--- Insertar historial de ingreso y egreso de usuario
+-- Insertar historial de ingreso y egreso de usuario Externo
 INSERT INTO Historial_Ingreso_Egreso (id_externo, id_vehiculo, id_estacionamiento, fechaEntrada, horaEntrada, costo, esExterno)
 VALUES (1, 3, 1, CURDATE(), CURTIME(), 3.00, true);
 -- (2, 2, 1, CURDATE(), CURTIME(), 3.00, false);

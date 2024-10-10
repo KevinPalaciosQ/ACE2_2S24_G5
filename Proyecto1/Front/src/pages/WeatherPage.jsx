@@ -19,6 +19,22 @@ const summaryData = [
   { image: imagen6 }
 ];
 
+const graf = (index) =>  {
+  const baseUrl = "https://example.com/report"; // Cambia esta URL a la que necesites
+  const url = `${baseUrl}?index=${index}`; // Agregar el índice como un parámetro de consulta
+
+  // Abre la URL en una nueva pestaña o ventana
+  window.open(url, "_blank");
+}
+
+const graf2 = (index) =>  {
+  const baseUrl = "https://example.com/report"; // Cambia esta URL a la que necesites
+  const url = `${baseUrl}?index=${index}`; // Agregar el índice como un parámetro de consulta
+
+  // Abre la URL en una nueva pestaña o ventana
+  window.open(url, "_blank");
+}
+
 const WeatherPage = () => {
   return (
     <Grid container spacing={3}>
@@ -61,8 +77,13 @@ const WeatherPage = () => {
         </Grid>
       ))}
       <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
-        <Button variant="contained" color="primary">
-          Generate Report
+        <Button variant="contained" color="primary" onClick={graf}>
+          Reporte Clima
+        </Button>
+      </Grid>
+      <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
+        <Button variant="contained" color="primary" onClick={graf2}>
+          Reporte Monitoreo
         </Button>
       </Grid>
     </Grid>

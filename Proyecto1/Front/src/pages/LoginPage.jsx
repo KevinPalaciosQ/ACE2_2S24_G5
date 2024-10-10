@@ -10,29 +10,59 @@ const LoginPage = () => {
   const [onRequest, setOnRequest] = useState(false);
   const [loginProgress, setLoginProgress] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userLogin, setUsuario] = useState("")
+  const [passwordLogin, setPassword] = useState("")
 
-  const onSignin = (e) => {
-
-    
+  const onSignin = async (e) => {
     e.preventDefault();
-    setOnRequest(true);
 
-    const interval = setInterval(() => {
-      setLoginProgress(prev => prev + 100 / 40);
-    }, 50);
 
-    setTimeout(() => {
-      clearInterval(interval);
-    }, 2000);
 
-    setTimeout(() => {
-      setIsLoggedIn(true);
-    }, 2100);
-
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 3300);
+    await fetch('http://localhost:5000/login', {
+      method: 'POST',
+      mode: 'cors',
+      body: JSON.stringify({
+        user: userLogin,
+        password: passwordLogin
+      }),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      }
+    }).then(response => response.json())
+      .then(data => validar(data));
   };
+
+
+  const validar = (data) => {
+    console.log(data)
+    //setImagen(data.Imagenbase64)
+    if (data.status === 200) {
+      setOnRequest(true);
+
+      const interval = setInterval(() => {
+        setLoginProgress(prev => prev + 100 / 40);
+      }, 50);
+
+      setTimeout(() => {
+        clearInterval(interval);
+      }, 2000);
+
+      setTimeout(() => {
+        setIsLoggedIn(true);
+      }, 2100);
+
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 3300);
+    } else if (data.status !=200) {
+      console.log("Usuario o contraseña incorrecta")
+    } else {
+      setUsuario("")
+      setPassword("")
+    }
+  }
+
 
   return (
     <Box
@@ -94,8 +124,8 @@ const LoginPage = () => {
             <Animate type="fade" sx={{ maxWidth: 400, width: "100%" }}>
               <Box component="form" maxWidth={400} width="100%" onSubmit={onSignin}>
                 <Stack spacing={3}>
-                  <TextField label="Username" fullWidth />
-                  <TextField label="Password" type="password" fullWidth />
+                  <TextField label="Username" onChange={e => setUsuario(e.target.value)} value={userLogin}  fullWidth/>
+                  <TextField label="Password" type="password" onChange={e => setPassword(e.target.value)} value={passwordLogin}  fullWidth />
                   <Button type="submit" size="large" variant="contained" color="success">
                     sign in
                   </Button>

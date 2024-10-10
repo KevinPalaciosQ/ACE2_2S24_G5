@@ -11,20 +11,21 @@ const InfoPage = () => {
   const [page, setPage] = useState(0);
   const [selectedBalance, setSelectedBalance] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [users, setUsers] = useState([]);  
-  const [selectedUser, setSelectedUser] = useState(null); 
-  const [historial, setHistorial] = useState([]); 
+  const [users, setUsers] = useState([]);  // Aquí almacenamos los datos de los usuarios
+  const [selectedUser, setSelectedUser] = useState(null); // Almacena la información del usuario seleccionado
+  const [historial, setHistorial] = useState([]); // Almacena el historial del usuario
   const rowsPerPage = 3;
   const [hnombre, sethnombre] = useState("");
   const [hapellido, sethapellido] = useState("");
   const [hrfid, sethrfid] = useState("");
   const [huid, setuid] = useState(0);
 
+  // Llamada al backend para obtener los datos de usuarios y externos
   useEffect(() => {
     axios.get('http://127.0.0.1:5000/administrador/listarUsuarios')
       .then((response) => {
         if (response.data.status === 200) {
-          setUsers(response.data.usuarios);
+          setUsers(response.data.usuarios);  // Asignar los usuarios al estado
         } else {
           console.error('Error al obtener usuarios:', response.data.msg);
         }
@@ -32,7 +33,7 @@ const InfoPage = () => {
       .catch((error) => {
         console.error('Error en la solicitud:', error);
       });
-  }, []);
+  }, []);  // Se ejecuta solo cuando el componente se monta
 
   const handleNext = () => {
     if ((page + 1) * rowsPerPage < users.length) {
@@ -47,22 +48,23 @@ const InfoPage = () => {
   };
 
   const handleSelect = (index) => {
-    const user = users[index];
-    setSelectedUser(user);
+    const user = users[index]; // Obtener el usuario de la tabla
+    setSelectedUser(user); // Almacenar información del usuario seleccionado
     setSelectedBalance(user.saldo);
     
+    // Hacer la solicitud al backend para obtener el historial
     axios.post('http://127.0.0.1:5000/administrador/obtenerusuario', {
-      uid: user.uid
+      uid: user.uid // Aquí se usa el UID del usuario seleccionado
     })
     .then((response) => {
       if (response.data.status === 200) {
         console.log(response.data)
-        setHistorial(response.data.historial);
+        setHistorial(response.data.historial); // Almacenar historial en el estado
         sethnombre(response.data.nombre);
         sethapellido(response.data.apellido);
         sethrfid(response.data.rfid);
         setuid(response.data.uid);
-        setOpenDialog(true);
+        setOpenDialog(true); // Abrir el diálogo
       } else {
         console.error('Error al obtener historial:', response.data.msg);
       }
@@ -77,37 +79,13 @@ const InfoPage = () => {
   };
 
   const handleAdd = () => {
-    // Solicitud para sumar saldo
-    axios.post('http://127.0.0.1:5000/administrador/sumarSaldo', {
-      uid: selectedUser.uid // Aquí se pasa el UID del usuario seleccionado
-    })
-    .then((response) => {
-      if (response.data.status === 200) {
-        setSelectedBalance(response.data.saldo); // Actualiza el saldo mostrado
-      } else {
-        console.error('Error al sumar saldo:', response.data.msg);
-      }
-    })
-    .catch((error) => {
-      console.error('Error en la solicitud:', error);
-    });
+    setSelectedBalance(selectedBalance + 3);
   };
 
   const handleSubtract = () => {
-    // Solicitud para restar saldo
-    axios.post('http://127.0.0.1:5000/administrador/restarSaldo', {
-      uid: selectedUser.uid // Aquí se pasa el UID del usuario seleccionado
-    })
-    .then((response) => {
-      if (response.data.status === 200) {
-        setSelectedBalance(response.data.saldo); // Actualiza el saldo mostrado
-      } else {
-        console.error('Error al restar saldo:', response.data.msg);
-      }
-    })
-    .catch((error) => {
-      console.error('Error en la solicitud:', error);
-    });
+    if (selectedBalance > 0) {
+      setSelectedBalance(selectedBalance - 3);
+    }
   };
 
   return (
@@ -140,7 +118,7 @@ const InfoPage = () => {
                       <TableCell>
                         <Button 
                           variant="contained" 
-                          onClick={() => handleSelect(index)} 
+                          onClick={() => handleSelect(index)}  // Llama a handleSelect cuando se presiona el botón
                         >
                           Seleccionar
                         </Button>
@@ -176,6 +154,7 @@ const InfoPage = () => {
           </IconButton>
         </DialogTitle>
         <DialogContent>
+          {/* Mostrar Nombre, Apellido, UID, RFID */}
           {selectedUser && (
             <Box>
               <Typography variant="body1"><strong>Nombre:</strong> {hnombre}</Typography>
@@ -185,6 +164,7 @@ const InfoPage = () => {
             </Box>
           )}
 
+          {/* Tabla de historial */}
           <TableContainer component={Paper} sx={{ mt: 2 }}>
             <Table>
               <TableHead sx={{ backgroundColor: '#1976d2', color: '#fff' }}>
@@ -214,6 +194,7 @@ const InfoPage = () => {
             </Table>
           </TableContainer>
 
+          {/* Mostrar Saldo debajo de la tabla */}
           <Typography variant="body1" sx={{ mt: 2 }}><strong>Saldo:</strong> Q.{selectedBalance}</Typography>
         </DialogContent>
         <DialogActions>

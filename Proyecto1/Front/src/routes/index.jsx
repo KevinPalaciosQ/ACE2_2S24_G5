@@ -5,6 +5,8 @@ import MainLayout from "../components/layout/MainLayout";
 import DashboardPage from "../pages/DashboardPage";
 import WeatherPage from "../pages/WeatherPage";  
 import InfoPage from "../pages/InfoPage";  
+import Messaging from "../pages/Messaging";
+import Camera from "../pages/Camera";
 
 export const router = createBrowserRouter([
   {
@@ -30,7 +32,15 @@ export const router = createBrowserRouter([
           {
             path: "info",  
             element: <InfoPage />
-          }
+          },
+          {
+            path: "messaging",  
+            element: <Messaging />
+          },
+          {
+            path: "camera",  
+            element: <Camera />
+          },          
         ]
       }
     ]

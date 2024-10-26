@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Box, Button, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton
+  Box, Button, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Paper, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, TextField
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import Animate from "../components/common/Animate";
@@ -19,6 +19,7 @@ const InfoPage = () => {
   const [hapellido, sethapellido] = useState("");
   const [hrfid, sethrfid] = useState("");
   const [huid, setuid] = useState(0);
+  const [newBalance, setNewBalance] = useState(""); // State for new balance input
 
   useEffect(() => {
     axios.get('http://127.0.0.1:5000/administrador/listarUsuarios')
@@ -56,7 +57,7 @@ const InfoPage = () => {
     })
     .then((response) => {
       if (response.data.status === 200) {
-        console.log(response.data)
+        console.log(response.data);
         setHistorial(response.data.historial);
         sethnombre(response.data.nombre);
         sethapellido(response.data.apellido);
@@ -76,39 +77,37 @@ const InfoPage = () => {
     setOpenDialog(false);
   };
 
-  const handleAdd = () => {
-    // Solicitud para sumar saldo
-    axios.post('http://127.0.0.1:5000/administrador/sumarSaldo', {
-      uid: selectedUser.uid // Aquí se pasa el UID del usuario seleccionado
-    })
-    .then((response) => {
-      if (response.data.status === 200) {
-        setSelectedBalance(response.data.saldo); // Actualiza el saldo mostrado
-      } else {
-        console.error('Error al sumar saldo:', response.data.msg);
-      }
-    })
-    .catch((error) => {
-      console.error('Error en la solicitud:', error);
-    });
+  const handleBalanceChange = (e) => {
+    setNewBalance(e.target.value); // Update the new balance input
   };
 
-  const handleSubtract = () => {
-    // Solicitud para restar saldo
-    axios.post('http://127.0.0.1:5000/administrador/restarSaldo', {
-      uid: selectedUser.uid // Aquí se pasa el UID del usuario seleccionado
+  const handleSubmitBalance = (e) => {
+    e.preventDefault(); // Prevent the default form submission
+  
+    const newBalanceValue = parseFloat(newBalance); // Asegúrate de que newBalance sea un número
+  
+    // Make a request to update the balance
+    axios.post('http://127.0.0.1:5000/administrador/modificarSaldo', { // Cambiado de actualizarSaldo a modificarSaldo
+      uid: selectedUser.uid,
+      saldo: newBalanceValue // Usar el nuevo saldo directamente
     })
     .then((response) => {
       if (response.data.status === 200) {
-        setSelectedBalance(response.data.saldo); // Actualiza el saldo mostrado
+        // Actualiza el saldo en el estado de usuarios
+        setUsers(prevUsers =>
+          prevUsers.map(user => user.uid === selectedUser.uid ? { ...user, saldo: newBalanceValue } : user)
+        );
+        setSelectedBalance(newBalanceValue); // Actualiza el saldo mostrado
+        setNewBalance(""); // Limpia el campo de entrada
       } else {
-        console.error('Error al restar saldo:', response.data.msg);
+        console.error('Error al actualizar saldo:', response.data.msg);
       }
     })
     .catch((error) => {
       console.error('Error en la solicitud:', error);
     });
   };
+  
 
   return (
     <Grid container spacing={3}>
@@ -141,6 +140,7 @@ const InfoPage = () => {
                         <Button 
                           variant="contained" 
                           onClick={() => handleSelect(index)} 
+                          disabled={openDialog && selectedUser?.uid === user.uid} // Disable button if the dialog is open for this user
                         >
                           Seleccionar
                         </Button>
@@ -215,13 +215,22 @@ const InfoPage = () => {
           </TableContainer>
 
           <Typography variant="body1" sx={{ mt: 2 }}><strong>Saldo:</strong> Q.{selectedBalance}</Typography>
+          <TextField
+            label="Nuevo Saldo"
+            type="number"
+            value={newBalance}
+            onChange={handleBalanceChange}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleSubmitBalance(e);
+              }
+            }}
+            sx={{ mt: 2, width: '100%' }}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleSubtract} variant="contained" sx={{ backgroundColor: '#f44336', '&:hover': { backgroundColor: '#d32f2f' } }}>
-            -
-          </Button>
-          <Button onClick={handleAdd} variant="contained" sx={{ backgroundColor: '#4caf50', '&:hover': { backgroundColor: '#388e3c' } }}>
-            +
+          <Button onClick={handleSubmitBalance} variant="contained" sx={{ backgroundColor: '#1976d2', '&:hover': { backgroundColor: '#1565c0' } }}>
+            Actualizar Saldo
           </Button>
         </DialogActions>
       </Dialog>

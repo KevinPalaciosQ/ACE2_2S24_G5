@@ -7,18 +7,33 @@ import hashlib
 import redis
 import time
 from datetime import datetime
-
+from dotenv import load_dotenv
+import boto3
+import os
+load_dotenv()
+db_hostname = os.getenv("DB_HOSTNAME")
+db_user = os.getenv("DB_USER")
+db_port = os.getenv("DB_PORT")
+db_name = os.getenv("DB_NAME")
+db_pass = os.getenv("DB_PASS") 
 app = Flask(__name__)
 
 CORS(app)
 
+# Configurar cliente de SNS usando variables de entorno
+sns_client = boto3.client(
+    'sns',
+    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+    region_name=os.getenv('AWS_REGION')
+)
 def get_db_connection():
     return mysql.connector.connect(
-        host='localhost',  # Cambia si tu servidor no está en localhost
-        port=3306,         # Cambia si tu servidor usa otro puerto
-        user='root',       # Cambia según tu usuario de MySQL
-        password='dedicadoArqui2',  # Cambia por tu contraseña de MySQL
-        database='arqbased'  # Cambia por tu base de datos
+        host=db_hostname,  # Cambia si tu servidor no está en localhost
+        port=db_port,         # Cambia si tu servidor usa otro puerto
+        user=db_user,       # Cambia según tu usuario de MySQL
+        password=db_pass,  # Cambia por tu contraseña de MySQL
+        database=db_name  # Cambia por tu base de datos
     )
 '''
 redis_client1 = redis.Redis(
@@ -1335,6 +1350,40 @@ def obtener_vehiculosTodoDia(redis_client):
 
     except mysql.connector.Error as err:
         print(f"Error al obtener los datos de vehículos en todo el día: {err}")
+@app.route('/send-email', methods=['POST'])
+def send_email():
+    try:
+        # Obtener el contenido del JSON enviado en la solicitud POST
+        data = request.get_json()
+
+        email = data.get('email')  # Dirección de correo del destinatario
+        subject = data.get('subject', 'Notificación')  # Título del correo
+        body = data.get('body', 'Contenido del correo')  # Cuerpo del correo
+
+        if not email:
+            return jsonify({'error': 'El campo "email" es obligatorio'}), 400
+
+        # Crear la suscripción al correo electrónico para enviar el mensaje a la dirección especificada
+        subscription = sns_client.subscribe(
+            TopicArn=os.getenv('SNS_TOPIC_ARN'),  # ARN de SNS desde el archivo .env
+            Protocol='email',
+            Endpoint=email
+        )
+
+        # Publicar el mensaje en el tema SNS
+        response = sns_client.publish(
+            TopicArn=os.getenv('SNS_TOPIC_ARN'),
+            Message=body,
+            Subject=subject
+        )
+
+        return jsonify({
+            'status': 'Correo enviado a {}'.format(email),
+            'messageId': response['MessageId']
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
 
 if __name__ == "__main__":

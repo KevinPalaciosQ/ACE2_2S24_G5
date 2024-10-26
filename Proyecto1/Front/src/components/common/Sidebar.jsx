@@ -10,6 +10,9 @@ import SavingsOutlinedIcon from '@mui/icons-material/SavingsOutlined';
 import SportsMotorsportsOutlinedIcon from '@mui/icons-material/SportsMotorsportsOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import CameraIcon from '@mui/icons-material/Camera';
+import ChatIcon from '@mui/icons-material/Chat';
+
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined'; // Importa el ícono de logout
 
@@ -39,6 +42,20 @@ const serviceMenus = [
     state: "weather",
     path: "weather" // Agrega la ruta correspondiente
   }
+  ,
+  {
+    title: "Messaging",
+    icon: <ChatIcon />,
+    state: "messaging",
+    path: "messaging" // Agrega la ruta correspondiente
+  }  
+  ,
+  {
+    title: "Security Camera",
+    icon: <CameraIcon />,
+    state: "camera",
+    path: "camera" // Agrega la ruta correspondiente
+  }  
 ];
 
 const investmentMenus = [];

@@ -17,8 +17,7 @@ const LoginPage = () => {
     e.preventDefault();
 
 
-
-    await fetch('http://localhost:5000/login', {
+    await fetch('http://44.202.22.250:5000/login', {
       method: 'POST',
       mode: 'cors',
       body: JSON.stringify({

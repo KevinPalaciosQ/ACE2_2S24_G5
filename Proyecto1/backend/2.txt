@@ -22,7 +22,8 @@ const InfoPage = () => {
 
   // Llamada al backend para obtener los datos de usuarios y externos
   useEffect(() => {
-    axios.get('http://127.0.0.1:5000/administrador/listarUsuarios')
+    axios.get('http://44.202.22.250:5000
+/administrador/listarUsuarios')
       .then((response) => {
         if (response.data.status === 200) {
           setUsers(response.data.usuarios);  // Asignar los usuarios al estado
@@ -53,7 +54,8 @@ const InfoPage = () => {
     setSelectedBalance(user.saldo);
     
     // Hacer la solicitud al backend para obtener el historial
-    axios.post('http://127.0.0.1:5000/administrador/obtenerusuario', {
+    axios.post('http://44.202.22.250:5000
+/administrador/obtenerusuario', {
       uid: user.uid // Aquí se usa el UID del usuario seleccionado
     })
     .then((response) => {

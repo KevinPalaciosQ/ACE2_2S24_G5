@@ -51,45 +51,31 @@ while True:
                 continue  # Ir a la siguiente iteración si el formato es incorrecto
             if user_type[0] == 'LOGIN':
                 if user_type[1] == "Admin":
-                    id, temperature, humidity = user_type[2].split(',')
-                    temp_value = re.findall(r"\d+\.\d+", temperature)[0]  # Buscar número con decimales en x
-                    humidity_value = re.findall(r"\d+\.\d+", humidity)[0]  # Buscar número con decimales en y
+                    id = user_type[2]
                     data_json = {
                         "login" : [
                             {
-                                "id": id,
-                                "humidity": temp_value,
-                                "temperature": humidity_value
+                                "id": id
                             }
                         ]
                     }
                     print(json.dumps(data_json, indent=4))
-
                     userlogin_request(id, '/administrador/entradaUsuario')
-                    weather_request(humidity_value, temp_value)
 
                 elif user_type[1] == "Student":
-                    id, temperature, humidity = user_type[2].split(',')
-                    temp_value = re.findall(r"\d+\.\d+", temperature)[0]  # Buscar número con decimales en x
-                    humidity_value = re.findall(r"\d+\.\d+", humidity)[0]  # Buscar número con decimales en y
+                    id = user_type[2]
                     data_json = {
                         "login" : [
                             {
-                                "id": id,
-                                "humidity": temp_value,
-                                "temperature": humidity_value
+                                "id": id
                             }
                         ]
                     }
                     print(json.dumps(data_json, indent=4))
-
                     userlogin_request(id, '/administrador/entradaUsuario')
-                    weather_request(humidity_value, temp_value)
 
                 elif user_type[1] == "External":
-                    id, temperature, humidity = user_type[2].split(',')
-                    temp_value = re.findall(r"\d+\.\d+", temperature)[0]  # Buscar número con decimales en x
-                    humidity_value = re.findall(r"\d+\.\d+", humidity)[0]  # Buscar número con decimales en y
+                    id = user_type[2]
 
                     letters = ''.join(random.choices(string.ascii_uppercase, k=2))
                     numbers = ''.join(random.choices(string.digits, k=2))
@@ -98,74 +84,69 @@ while True:
                     data_json = {
                         "login" : [
                             {
-                                "id": 'xxxx',
-                                "humidity": temp_value,
-                                "temperature": humidity_value
+                                "id": id
                             }
                         ]
                     }
                     print(json.dumps(data_json, indent=4))
 
-                    userlogin_request(random_string, '/administrador/logicaEntradaExterno')
-                    weather_request(humidity_value, temp_value)
+                    userlogin_request(id, '/administrador/logicaEntradaExterno')
+                    # userlogin_request(random_string, '/administrador/logicaEntradaExterno')
 
                 else:
                     print(f"Error user no compatible")
             elif user_type[0] == 'LOGOUT':
                 if user_type[1] == "Admin":
-                    id, temperature, humidity = user_type[2].split(',')
-                    temp_value = re.findall(r"\d+\.\d+", temperature)[0]  # Buscar número con decimales en x
-                    humidity_value = re.findall(r"\d+\.\d+", humidity)[0]  # Buscar número con decimales en y
+                    id = user_type[2]
+                    
                     data_json = {
                         "logout" : [
                             {
-                                "id": id,
-                                "humidity": temp_value,
-                                "temperature": humidity_value
+                                "id": id
                             }
                         ]
                     }
                     print(json.dumps(data_json, indent=4))
-
                     userlogout_request(id, '/administrador/salidaUsuario')
-                    weather_request(humidity_value, temp_value)
 
                 elif user_type[1] == "Student":
-                    id, temperature, humidity = user_type[2].split(',')
-                    temp_value = re.findall(r"\d+\.\d+", temperature)[0]  # Buscar número con decimales en x
-                    humidity_value = re.findall(r"\d+\.\d+", humidity)[0]  # Buscar número con decimales en y
+                    id = user_type[2]
                     data_json = {
                         "logout" : [
                             {
-                                "id": id,
-                                "humidity": temp_value,
-                                "temperature": humidity_value
+                                "id": id
                             }
                         ]
                     }
                     print(json.dumps(data_json, indent=4))
-
                     userlogout_request(id, '/administrador/salidaUsuario')
-                    weather_request(humidity_value, temp_value)
 
                 elif user_type[1] == "External":
-                    id, temperature, humidity = user_type[2].split(',')
-                    temp_value = re.findall(r"\d+\.\d+", temperature)[0]  # Buscar número con decimales en x
-                    humidity_value = re.findall(r"\d+\.\d+", humidity)[0]  # Buscar número con decimales en y
+                    id = user_type[2]
                     data_json = {
                         "logout" : [
                             {
-                                "id": 'xxxx',
-                                "humidity": temp_value,
-                                "temperature": humidity_value
+                                "id": id
                             }
                         ]
                     }
                     print(json.dumps(data_json, indent=4))
-
-                    userlogout_request(id, '/administrador/pagoSalidaExterno')
-                    weather_request(humidity_value, temp_value)
-
+                    userlogout_request(id, '/administrador/pagoSalidaExterno')        
+            elif user_type[0] == 'ENVIRONMENT':
+                humidity = user_type[1]
+                temperature = user_type[2]
+                temp_value = re.findall(r"\d+\.\d+", temperature)[0]
+                humidity_value = re.findall(r"\d+\.\d+", humidity)[0]
+                data_json = {
+                    "environment" : [
+                        {
+                            "humidity": humidity_value,
+                            "temperature": temp_value
+                        }
+                    ]
+                }
+                print(json.dumps(data_json, indent=4))
+                weather_request(humidity_value, temp_value)
         except ValueError:
             print(f"Error al procesar los datos: {ValueError}")
     else:

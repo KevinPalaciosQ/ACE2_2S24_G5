@@ -80,7 +80,12 @@ void loop() {
   lcd.setCursor(0,1);
   lcd.print(temperatureText);
 
-  login(humidityText, temperatureText);
+  Serial.print("ENVIRONMENT-");
+  Serial.print(humidityText);
+  Serial.print("-");
+  Serial.println(temperatureText);
+
+  login();
 
 }
 
@@ -121,7 +126,7 @@ void handleServoMotion() {
   }
 }
 
-void login(String humidityText, String temperatureText){
+void login(){
   byte studentState;
   byte adminState;
   EEPROM.get(0, studentState);
@@ -163,19 +168,11 @@ void login(String humidityText, String temperatureText){
               if (pin.equals("860FA022")){
                 lcd.setCursor(0, 0); 
                 lcd.print("Student :3");
-                Serial.print("LOGIN-Admin-");
-                Serial.print("860FA022, ");
-                Serial.print(humidityText);
-                Serial.print(", ");
-                Serial.println(temperatureText);
+                Serial.println("LOGIN-Admin-860FA022");
               } else {
                 lcd.setCursor(0, 0); 
                 lcd.print("Admin :o");
-                Serial.print("LOGIN-Student-");
-                Serial.print("D46BE373, ");
-                Serial.print(humidityText);
-                Serial.print(", ");
-                Serial.println(temperatureText);
+                Serial.println("LOGIN-Student-D46BE373");
               }
               
               lcd.setCursor(0, 1); // Coloca el cursor en la segunda fila, primera columna
@@ -191,15 +188,9 @@ void login(String humidityText, String temperatureText){
               lcd.setCursor(0,0);
               lcd.print("User logged out");
               if (users[i].getPin().equals("860FA022")){
-                Serial.print("LOGOUT-Admin-860FA022, ");
-                Serial.print(humidityText);
-                Serial.print(", ");
-                Serial.println(temperatureText);
+                Serial.println("LOGOUT-Admin-860FA022");
               } else {
-                Serial.print("LOGOUT-Student-D46BE373, ");
-                Serial.print(humidityText);
-                Serial.print(", ");
-                Serial.println(temperatureText);
+                Serial.println("LOGOUT-Student-D46BE373");
               }
               
               handleServoMotion();
@@ -230,10 +221,7 @@ void login(String humidityText, String temperatureText){
       }
     } else if (digitalRead(externalUserPin) == HIGH && digitalRead(loginPin) == LOW) { //DETECTA QUE PRESIONARON EL PULSADOR Y QUE DETECTO IR ENTRADA, ***HACE LOGIN COMO EXTERNO***
       //Serial.println("External user logged in");
-      Serial.print("LOGIN-External- ,");
-      Serial.print(humidityText);
-      Serial.print(", ");
-      Serial.println(temperatureText);
+      Serial.println("LOGIN-External-XXXXXX");
       lcd.clear();
       lcd.setCursor(0,0);
       lcd.print("External user");
@@ -248,10 +236,7 @@ void login(String humidityText, String temperatureText){
         lcd.print("Coin inserted:");
         lcd.setCursor(0,1);
         lcd.print("EU logged out");
-        Serial.print("LOGOUT-External-XXXXXX, ");
-        Serial.print(humidityText);
-        Serial.print(", ");
-        Serial.println(temperatureText);
+        Serial.println("LOGOUT-External-XXXXXX");
 
         handleServoMotion();
         extULogout = false;

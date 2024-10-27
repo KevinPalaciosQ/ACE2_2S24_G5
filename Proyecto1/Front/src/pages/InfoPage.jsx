@@ -22,7 +22,7 @@ const InfoPage = () => {
   const [newBalance, setNewBalance] = useState(""); // State for new balance input
 
   useEffect(() => {
-    axios.get('http://44.202.22.250:5000/administrador/listarUsuarios')
+    axios.get('http://18.212.20.189:5000/administrador/listarUsuarios')
       .then((response) => {
         if (response.data.status === 200) {
           setUsers(response.data.usuarios);
@@ -52,7 +52,7 @@ const InfoPage = () => {
     setSelectedUser(user);
     setSelectedBalance(user.saldo);
     
-    axios.post('http://44.202.22.250:5000/administrador/obtenerusuario', {
+    axios.post('http://18.212.20.189:5000/administrador/obtenerusuario', {
       uid: user.uid
     })
     .then((response) => {
@@ -87,7 +87,7 @@ const InfoPage = () => {
     const newBalanceValue = parseFloat(newBalance); // Asegúrate de que newBalance sea un número
   
     // Make a request to update the balance
-    axios.post('http://44.202.22.250:5000/administrador/modificarSaldo', { // Cambiado de actualizarSaldo a modificarSaldo
+    axios.post('http://18.212.20.189:5000/administrador/modificarSaldo', { // Cambiado de actualizarSaldo a modificarSaldo
       uid: selectedUser.uid,
       saldo: newBalanceValue // Usar el nuevo saldo directamente
     })

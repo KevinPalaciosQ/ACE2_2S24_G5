@@ -3,8 +3,8 @@ import serial
 import json
 import re, random, string, requests
 
-url = 'http://localhost:5000'
-ard_object = serial.Serial('COM4', 9600)
+url = 'http://18.212.20.189:5000'
+ard_object = serial.Serial('COM3', 9600)
 time.sleep(2)  # Esperar a que la conexión se establezca
 
 def weather_request(humidity_data, temp_data):
@@ -140,8 +140,8 @@ while True:
                 data_json = {
                     "environment" : [
                         {
-                            "humidity": humidity_value,
-                            "temperature": temp_value
+                            "humedad": humidity_value,
+                            "temperatura": temp_value
                         }
                     ]
                 }

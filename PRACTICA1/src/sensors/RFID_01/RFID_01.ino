@@ -3,7 +3,6 @@
 #include "User.h" 
 #include <Servo.h>
 #include <Wire.h> 
-#include <LiquidCrystal_I2C.h>
 #include "DHT.h"
 #include <EEPROM.h>
 
@@ -43,17 +42,13 @@ const int externalUserPin   =   6;
 Servo myServo;
 const int servoPin          =   5;
 
-// LCD I2C
-LiquidCrystal_I2C lcd(0x27,16,2);  
+
 
 void setup() {
   pinMode(PIRPin, INPUT);
   attachInterrupt(digitalPinToInterrupt(PIRPin), handleInterrupt, CHANGE);
   pinMode(externalUserPin, INPUT);
   attachInterrupt(digitalPinToInterrupt(coinHopperPin), logoutExternalUser, RISING);
-  
-  lcd.init();
-  lcd.backlight();
   
   pinMode(loginPin, INPUT);   
   pinMode(logoutPin, INPUT); 
@@ -73,12 +68,6 @@ void loop() {
 
   String humidityText = "Humidity: " + String(h) + "%";
   String temperatureText = "Temp: " + String(t) + " C";
-
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print(humidityText);
-  lcd.setCursor(0,1);
-  lcd.print(temperatureText);
 
   Serial.print("ENVIRONMENT-");
   Serial.print(humidityText);
@@ -163,20 +152,12 @@ void login(){
               users[i].setState(true);
               EEPROM.write(i, 1);
               String userName = "User: "+pin;
-              lcd.clear();
 
               if (pin.equals("860FA022")){
-                lcd.setCursor(0, 0); 
-                lcd.print("Student :3");
                 Serial.println("LOGIN-Admin-860FA022");
               } else {
-                lcd.setCursor(0, 0); 
-                lcd.print("Admin :o");
                 Serial.println("LOGIN-Student-D46BE373");
               }
-              
-              lcd.setCursor(0, 1); // Coloca el cursor en la segunda fila, primera columna
-              lcd.print("Logged in");
 
               handleServoMotion();
               break;
@@ -184,9 +165,6 @@ void login(){
             } else if (users[i].getState() == true && digitalRead(logoutPin) == LOW) { //Verifica que estudiante/profesor ya este dentro y si detecta algo en la salida, **si se cumple hace LOGOUT**
               users[i].setState(false);
               EEPROM.write(i, 0);
-              lcd.clear();
-              lcd.setCursor(0,0);
-              lcd.print("User logged out");
               if (users[i].getPin().equals("860FA022")){
                 Serial.println("LOGOUT-Admin-860FA022");
               } else {
@@ -199,18 +177,8 @@ void login(){
             } else { // IMPRIME QUE EL USUARIO YA ESTA ADENTRO Y NO HA SALIDO
               if (users[i].getState()) {                                                  //
                 //Serial.println("User: " + users[i].getPin() + " is logged in");
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("User already logged in");
-                lcd.setCursor(0, 1);
-                lcd.print("logged in");
               } else { // IMPRIME QUE EL USUARIO YA ESTE AFUERA Y NO HA ENTRADO
                 //Serial.println("User: " + users[i].getPin() + " is logged out");
-                lcd.clear();
-                lcd.setCursor(0,0);
-                lcd.print("User already");
-                lcd.setCursor(0,1);
-                lcd.print("logged out");
               }
             }
           } 
@@ -222,20 +190,10 @@ void login(){
     } else if (digitalRead(externalUserPin) == HIGH && digitalRead(loginPin) == LOW) { //DETECTA QUE PRESIONARON EL PULSADOR Y QUE DETECTO IR ENTRADA, ***HACE LOGIN COMO EXTERNO***
       //Serial.println("External user logged in");
       Serial.println("LOGIN-External-XXXXXX");
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("External user");
-      lcd.setCursor(0,1);
-      lcd.print("logged in");
       handleServoMotion();
     } else {
       if (extULogout == true && digitalRead(logoutPin) == LOW) { // Valida que se haya depositado la moneda y que en la salida haya alguien, *** HACE LOGOUT COMO EXTERNO***
         //Serial.println("Coin inserted, External user logout");
-
-        lcd.setCursor(0,0);
-        lcd.print("Coin inserted:");
-        lcd.setCursor(0,1);
-        lcd.print("EU logged out");
         Serial.println("LOGOUT-External-XXXXXX");
 
         handleServoMotion();

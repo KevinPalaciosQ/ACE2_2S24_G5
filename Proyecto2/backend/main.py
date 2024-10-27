@@ -35,17 +35,16 @@ def get_db_connection():
         password=db_pass,  # Cambia por tu contraseña de MySQL
         database=db_name  # Cambia por tu base de datos
     )
-'''
-redis_client1 = redis.Redis(
-    host='localhost',  # Cambia si tu servidor no está en localhost
-    port=6379,         # Cambia si tu servidor usa otro puerto
-    db=0
-   # password='dedicadoArqui2'  # Cambia por tu contraseña de MySQL
-)'''
+
 
 def get_db_connectionredis():
-    return redis.Redis(host='localhost', port=6379, db=0)
-
+    #return redis.Redis(host='localhost', port=6379, db=0)
+    try:
+        return redis.StrictRedis(host='3.95.21.55', port=6379, decode_responses=False)
+    except redis.ConnectionError as e:
+        print(f"Error al conectarse a Redis: {e}")
+    except Exception as e:
+        print(f"Ocurrió un error: {e}")
 #ALMACENAR DATOS EN REDIS
 #redis_client.set('key', 'value')
 #redis_client.get('sensor:temperature:2024', '24.5')
@@ -170,7 +169,7 @@ def logica_entradaUsuario():
 
             # Calcular el porcentaje de ocupación
             porcentaje_ocupacion = (int(cantidadvehiculos_dentro) / int(capacidad)) * 100
-            redis_client.set('ocupacion_porcentaje', round(porcentaje_ocupacion, 2))
+            redis_client.set('ocupacion_porcentaje', float(round(porcentaje_ocupacion, 2)))
 
             # Calcular el porcentaje de externos
             porcentaje_externos = obtener_porcentaje_externos()
@@ -310,7 +309,7 @@ def logica_entrada_externo():
 
         # Calcular el porcentaje de ocupación
         porcentaje_ocupacion = (int(cantidadvehiculos_dentro) / int(capacidad)) * 100
-        redis_client.set('ocupacion_porcentaje', round(porcentaje_ocupacion, 2))
+        redis_client.set('ocupacion_porcentaje', float(round(porcentaje_ocupacion, 2)))
 
         # Calcular el porcentaje de externos
         porcentaje_externos = obtener_porcentaje_externos()
@@ -436,7 +435,7 @@ def logica_salida_Usuario():
 
             # Calcular el porcentaje de ocupación
             porcentaje_ocupacion = (int(cantidadvehiculos_dentro) / int(capacidad)) * 100
-            redis_client.set('ocupacion_porcentaje', round(porcentaje_ocupacion, 2))
+            redis_client.set('ocupacion_porcentaje', float(round(porcentaje_ocupacion, 2)))
 
             # Calcular el porcentaje de externos
             porcentaje_externos = obtener_porcentaje_externos()
@@ -588,7 +587,7 @@ def pago_salida_externo():
 
             # Calcular el porcentaje de ocupación
             porcentaje_ocupacion = (int(cantidadvehiculos_dentro) / int(capacidad)) * 100
-            redis_client.set('ocupacion_porcentaje', round(porcentaje_ocupacion, 2))
+            redis_client.set('ocupacion_porcentaje', float(round(porcentaje_ocupacion, 2)))
 
             # Calcular el porcentaje de externos
             porcentaje_externos = obtener_porcentaje_externos()
@@ -633,7 +632,6 @@ def pago_salida_externo():
 ACÁ VA EL CÓDIGO PARA EL PANEL DE CLIMA ******************************************************************************
 '''
 
-
 @app.route('/administrador/insertarClima', methods=['POST'])
 def insertar_clima():
     try:
@@ -656,19 +654,31 @@ def insertar_clima():
             redis_client.delete('temperatura')
         if redis_client.type('humedad') != b'zset':
             redis_client.delete('humedad')
-
         # Obtener el tiempo actual en horas:minutos:segundos
         current_time = datetime.now().strftime("%H:%M:%S")
 
         # Insertar datos de temperatura en una serie de tiempo
         current_timestamp = int(time.time() * 1000)  # timestamp en milisegundos
-        redis_client.zadd('temperatura', {float(temperatura): current_timestamp})
-        redis_client.zadd('hora_temperatura', {current_time: current_timestamp})
+        #redis_client.set('temperatura', float(temperatura))
+        #redis_client.set('hora_temperatura', {current_time: current_timestamp})
+
+        data1 = {
+            'temperatura' : float(temperatura),
+            'humedad' : float(humedad),
+            'hora' : current_timestamp
+        }
+
+        json_data1 = json.dumps(data1)
+        
+
+        redis_client.rpush('clima', json_data1)
+
+        # redis_client.zadd('temperatura', {float(temperatura): current_timestamp})
+        # redis_client.zadd('humedad', {float(humedad): current_timestamp})
 
         # Insertar datos de humedad
-        redis_client.zadd('humedad', {float(humedad): current_timestamp})
-        redis_client.zadd('hora_humedad', {current_time: current_timestamp})
-
+        #redis_client.set('humedad', float(humedad))
+        #redis_client.set('hora_humedad', {current_time: current_timestamp})
         # Devolver una respuesta de éxito
         return jsonify({
             "status": 200,
@@ -680,7 +690,6 @@ def insertar_clima():
             "status": 400,
             "msg": f"Error al insertar datos de clima: {err}"
         }), 400
-
 @app.route('/administrador/obtenerClima', methods=['GET'])
 def obtener_clima():
     try:
@@ -1167,8 +1176,8 @@ def insertar_capacidad():
         redis_client.setnx('capacidad', capacidad_inicial)
         redis_client.set('espacios_disponibles', capacidad_inicial)
         redis_client.set('vehiculos_dentro', 0)
-        redis_client.set('ocupacion_porcentaje', round(0, 2))
-        redis_client.set('externos_porcentaje', round(0, 2))
+        redis_client.set('ocupacion_porcentaje', float(round(0, 2)))
+        redis_client.set('externos_porcentaje', float(round(0, 2)))
         # Obtener el tiempo actual en formato horas:minutos:segundos
         current_time = datetime.now().strftime("%H:%M:%S")
         # Almacenar la hora de la última actualización
@@ -1213,7 +1222,7 @@ def actualizar_espacios_disponibles():
         capacidad = redis_client.get('capacidad').decode('utf-8')
         # Calcular el porcentaje de ocupación
         porcentaje_ocupacion = (int(cantidadvehiculos_dentro) / int(capacidad)) * 100
-        redis_client.set('ocupacion_porcentaje', round(porcentaje_ocupacion, 2))
+        redis_client.set('ocupacion_porcentaje', float(round(porcentaje_ocupacion, 2)))
         porcentaje_externos = obtener_porcentaje_externos()
         redis_client.set('externos_porcentaje', porcentaje_externos)
 
@@ -1305,7 +1314,7 @@ def obtener_porcentaje_externos():
         db_connection.close()
 
         # Devolver la respuesta con el porcentaje de usuarios externos
-        return round(porcentaje_externos, 2)
+        return float(round(porcentaje_externos, 2))
 
     except mysql.connector.Error as err:
         return 0
@@ -1389,336 +1398,3 @@ def send_email():
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
 
-
-'''
-# -----------------------------------------------------------------------------------OBTENER LA CANTIDAD DE VEHICULOS DENTRO DEL PARQUEO
-
-@app.route('/administrador/getCantidadVehiculos', methods=['GET'])
-def get_cantidad_vehiculos():
-    try:
-        # Conectar a la base de datos
-        db_connection = get_db_connection()
-        cursor = db_connection.cursor()
-
-        # Consulta SQL para obtener la capacidad total y los espacios disponibles del estacionamiento
-        query = """
-            SELECT capacidad, espaciosDisponibles
-            FROM Estacionamiento
-            LIMIT 1;
-        """
-        cursor.execute(query)
-        estacionamiento = cursor.fetchone()
-
-        if not estacionamiento:
-            return jsonify({
-                "status": 401,
-                "msg": "No se encontró información sobre el estacionamiento."
-            }), 401
-
-        # Calcular la cantidad de vehículos dentro del parqueo
-        capacidad_total = estacionamiento[0]            # Capacidad total del estacionamiento
-        espacios_disponibles = estacionamiento[1]       # Espacios disponibles en el estacionamiento
-        cantidad_vehiculos = capacidad_total - espacios_disponibles  # Vehículos dentro del parqueo
-
-        # Cerrar cursor y conexión
-        cursor.close()
-        db_connection.close()
-
-        # Devolver la respuesta con la cantidad de vehículos
-        return jsonify({
-            "status": 200,
-            "msg": "Cantidad de vehículos obtenida correctamente.",
-            "cantidad": cantidad_vehiculos
-        }), 200
-
-    except mysql.connector.Error as err:
-        return jsonify({
-            "status": 400,
-            "msg": f"Error al obtener la cantidad de vehículos: {err}"
-        }), 400
-
-# -----------------------------------------------------------------------------------OBTENER LOS ESPACIOS DISPONIBLES DENTRO DEL PARQUEO
-
-#@app.route('/administrador/getEspaciosDisponibles', methods=['GET'])
-def get_espacios_disponibles():
-    try:
-        # Conectar a la base de datos
-        db_connection = get_db_connection()
-        cursor = db_connection.cursor()
-
-        # Consulta SQL para obtener los espacios disponibles del estacionamiento
-        query = """
-            SELECT espaciosDisponibles
-            FROM Estacionamiento
-            LIMIT 1;
-        """
-        cursor.execute(query)
-        estacionamiento = cursor.fetchone()
-
-        if not estacionamiento:
-            return "No se encontró información sobre el estacionamiento."
-            #return jsonify({"status": 400,"msg": "No se encontró información sobre el estacionamiento."}), 400
-
-        # Obtener el número de espacios disponibles
-        espacios_disponibles = estacionamiento[0]
-
-        # Cerrar cursor y conexión
-        cursor.close()
-        db_connection.close()
-        return espacios_disponibles
-        # Devolver la respuesta con los espacios disponibles
-        #return jsonify({"status": 200,"msg": "Espacios disponibles obtenidos correctamente.","espaciosDisponibles": espacios_disponibles}), 200
-
-    except mysql.connector.Error as err:
-        return "Error al obtener los espacios disponibles: {err}"
-        #return jsonify({"status": 400, "msg": f"Error al obtener los espacios disponibles: {err}"}), 400
-
-
-# -------------------------------------------------------------------   OBTENER EL PORCENTAJE DE OCUPACIÓN DENTRO DEL PARQUEO
-
-@app.route('/administrador/getPorcentajeOcupacion', methods=['GET'])
-def get_porcentaje_ocupacion():
-    try:
-        # Conectar a la base de datos
-        db_connection = get_db_connection()
-        cursor = db_connection.cursor()
-
-        # Consulta SQL para obtener la capacidad total y los espacios disponibles del estacionamiento
-        query = """
-            SELECT capacidad, espaciosDisponibles
-            FROM Estacionamiento
-            LIMIT 1;
-        """
-        cursor.execute(query)
-        estacionamiento = cursor.fetchone()
-
-        if not estacionamiento:
-            return jsonify({
-                "status": 400,
-                "msg": "No se encontró información sobre el estacionamiento."
-            }), 400
-
-        # Obtener los valores de capacidad y espacios disponibles
-        capacidad_total = estacionamiento[0]
-        espacios_disponibles = estacionamiento[1]
-
-        # Calcular el porcentaje de ocupación
-        vehiculos_ocupando = capacidad_total - espacios_disponibles
-        porcentaje_ocupacion = (vehiculos_ocupando / capacidad_total) * 100
-
-        # Cerrar cursor y conexión
-        cursor.close()
-        db_connection.close()
-
-        # Devolver la respuesta con el porcentaje de ocupación
-        return jsonify({
-            "status": 200,
-            "msg": "Porcentaje de ocupación obtenido correctamente.",
-            "porcentajeOcupacion": round(porcentaje_ocupacion, 2)
-        }), 200
-
-    except mysql.connector.Error as err:
-        return jsonify({
-            "status": 400,
-            "msg": f"Error al obtener el porcentaje de ocupación: {err}"
-        }), 400
-
-# -------------------------------------------------------------------   OBTENER EL PORCENTAJE DE USUARIOS EXTERNOS
-@app.route('/administrador/getPorcentajeExternos', methods=['GET'])
-def get_porcentaje_externos():
-    try:
-        # Conectar a la base de datos
-        db_connection = get_db_connection()
-        cursor = db_connection.cursor()
-
-        # Consulta SQL para contar el total de registros en Historial_Ingreso_Egreso
-        query_total = """
-            SELECT COUNT(*) 
-            FROM Historial_Ingreso_Egreso
-            WHERE horaSalida IS NOT NULL;
-        """
-        cursor.execute(query_total)
-        total_registros = cursor.fetchone()[0]
-
-        if total_registros == 0:
-            return jsonify({
-                "status": 400,
-                "msg": "No se han encontrado registros de ingresos y salidas."
-            }), 400
-
-        # Consulta SQL para contar los usuarios externos en el historial
-        query_externos = """
-            SELECT COUNT(*)
-            FROM Historial_Ingreso_Egreso
-            WHERE esExterno = TRUE AND horaSalida IS NOT NULL;
-        """
-        cursor.execute(query_externos)
-        total_externos = cursor.fetchone()[0]
-
-        # Calcular el porcentaje de usuarios externos
-        porcentaje_externos = (total_externos / total_registros) * 100
-
-        # Cerrar cursor y conexión
-        cursor.close()
-        db_connection.close()
-
-        # Devolver la respuesta con el porcentaje de usuarios externos
-        return jsonify({
-            "status": 200,
-            "msg": "Porcentaje de usuarios externos obtenido correctamente.",
-            "porcentajeExternos": round(porcentaje_externos, 2)
-        }), 200
-
-    except mysql.connector.Error as err:
-        return jsonify({
-            "status": 400,
-            "msg": f"Error al obtener el porcentaje de usuarios externos: {err}"
-        }), 400
-
-
-# lo mismo que el anterior pero para manejo en tiempo real            utilizar esta petición de preferencia
-@app.route('/administrador/getVehiculosTiempoReal', methods=['GET'])
-def get_vehiculos_tiempo_real():
-    try:
-        # Obtener fecha actual para limitar la búsqueda al día de hoy
-        fecha_hoy = datetime.date.today()
-
-        # Conectar a la base de datos
-        db_connection = get_db_connection()
-        cursor = db_connection.cursor()
-
-        # Consulta para obtener el número de vehículos que ingresaron hoy
-        query_ingresados = """
-            SELECT COUNT(*) 
-            FROM Historial_Ingreso_Egreso 
-            WHERE fechaEntrada = %s;
-        """
-        cursor.execute(query_ingresados, (fecha_hoy,))
-        total_ingresados = cursor.fetchone()[0]
-
-        # Consulta para obtener el número de vehículos que están fuera (que ya salieron hoy)
-        query_salidos = """
-            SELECT COUNT(*) 
-            FROM Historial_Ingreso_Egreso 
-            WHERE horaSalida IS NOT NULL AND fechaEntrada = %s;
-        """
-        cursor.execute(query_salidos, (fecha_hoy,))
-        total_salidos = cursor.fetchone()[0]
-
-        # Cerrar cursor y conexión
-        cursor.close()
-        db_connection.close()
-
-        # Calcular los vehículos dentro (ingresados - salidos)
-        vehiculos_dentro = total_ingresados - total_salidos
-
-        # Devolver la respuesta con los datos de ingresados, salidos y vehículos dentro
-        return jsonify({
-            "status": 200,
-            "msg": "Datos de vehículos en tiempo real obtenidos correctamente.",
-            "vehiculosIngresados": total_ingresados,
-            "vehiculosSalidos": total_salidos,
-            "vehiculosDentro": vehiculos_dentro
-        }), 200
-
-    except mysql.connector.Error as err:
-        return jsonify({
-            "status": 400,
-            "msg": f"Error al obtener los datos de vehículos: {err}"
-        }), 400
-
-# ----------------------------------------------------------------------------------- OBTENER DATOS DEL CLIMA
-@app.route('/administrador/getClimaActual', methods=['GET'])
-def get_clima_actual():
-    try:
-        # Conectar a la base de datos
-        db_connection = get_db_connection()
-        cursor = db_connection.cursor()
-
-        # Consulta SQL para obtener el último registro de clima
-        query_get_clima = """
-            SELECT temperatura, humedad, fecha
-            FROM Clima
-            ORDER BY fecha DESC
-            LIMIT 1;
-        """
-        cursor.execute(query_get_clima)
-        clima = cursor.fetchone()
-
-        if not clima:
-            return jsonify({
-                "status": 400,
-                "msg": "No se encontraron datos de clima."
-            }), 400
-
-        # Extraer los valores de temperatura, humedad y fecha del resultado
-        temperatura, humedad, fecha = clima
-
-        # Cerrar cursor y conexión
-        cursor.close()
-        db_connection.close()
-
-        # Devolver los datos de clima en la respuesta
-        return jsonify({
-            "status": 200,
-            "msg": "Datos de clima obtenidos correctamente.",
-            "temperatura": temperatura,
-            "humedad": humedad,
-            "fecha": fecha.strftime('%Y-%m-%d %H:%M:%S')  # Formato de fecha y hora
-        }), 200
-
-    except mysql.connector.Error as err:
-        return jsonify({
-            "status": 400,
-            "msg": f"Error al obtener los datos de clima: {err}"
-        }), 400
-
-# -------------------------------------------------------------------   NUMERO DE VEHÍCULOS QUE HAN INGRESADO Y SALIDO DEL PARQUEO EN TODO EL DIA
-
-@app.route('/administrador/getVehiculosDia', methods=['GET'])
-def get_vehiculos_dia():
-    try:
-        # Obtener fecha actual para limitar la búsqueda al día de hoy
-        fecha_hoy = datetime.date.today()
-
-        # Conectar a la base de datos
-        db_connection = get_db_connection()
-        cursor = db_connection.cursor()
-
-        # Consulta para obtener el número de vehículos que ingresaron hoy
-        query_ingresados = """
-            SELECT COUNT(*) 
-            FROM Historial_Ingreso_Egreso 
-            WHERE fechaEntrada = %s;
-        """
-        cursor.execute(query_ingresados, (fecha_hoy,))
-        total_ingresados = cursor.fetchone()[0]
-
-        # Consulta para obtener el número de vehículos que salieron hoy
-        query_salidos = """
-            SELECT COUNT(*) 
-            FROM Historial_Ingreso_Egreso 
-            WHERE horaSalida IS NOT NULL AND fechaEntrada = %s;
-        """
-        cursor.execute(query_salidos, (fecha_hoy,))
-        total_salidos = cursor.fetchone()[0]
-
-        # Cerrar cursor y conexión
-        cursor.close()
-        db_connection.close()
-
-        # Devolver la respuesta con los datos de ingresados y salidos
-        return jsonify({
-            "status": 200,
-            "msg": "Vehículos ingresados y salidos obtenidos correctamente.",
-            "vehiculosIngresados": total_ingresados,
-            "vehiculosSalidos": total_salidos
-        }), 200
-
-    except mysql.connector.Error as err:
-        return jsonify({
-            "status": 400,
-            "msg": f"Error al obtener los datos de vehículos: {err}"
-        }), 400
-
-'''

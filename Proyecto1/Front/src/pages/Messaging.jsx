@@ -13,7 +13,7 @@ const Messaging = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://44.202.22.250:5000/send-email', {  // URL local del backend Flask
+      const response = await fetch('http://18.212.20.189:5000/send-email', {  // URL local del backend Flask
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
